@@ -1,0 +1,430 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8">
+<title>COCO-RISE ตรวจข้อมูล</title>
+<style>
+ body{font-family:"Leelawadee UI",system-ui,sans-serif;max-width:980px;margin:28px auto;padding:0 16px;color:#1f2937}
+ h1{font-size:20px;margin-bottom:2px} h2{font-size:16px;margin:22px 0 8px}
+ p.lead{color:#4b5563;font-size:14px;margin-top:0}
+ input,button{font:inherit;padding:8px;border:1px solid #cbd5e1;border-radius:6px}
+ button{background:#1f2937;color:#fff;border:0;cursor:pointer} button.ghost{background:#eef2f5;color:#1f2937}
+ table{border-collapse:collapse;width:100%;font-size:14px;margin-top:6px}
+ th,td{border-bottom:1px solid #e2e8f0;padding:7px 8px;text-align:left;vertical-align:top}
+ th{color:#4b5563;font-weight:600} .src{color:#8b2a17} .ok{color:#15803d} .num{width:120px}
+ .box{border:1px solid #e2e8f0;border-radius:10px;padding:14px;background:#fafafa;margin-top:10px}
+ .msg{font-size:14px;color:#2f6fa8;margin-top:8px}
+ .ocr{white-space:pre-wrap;max-height:320px;overflow:auto;background:#f1f5f9;padding:10px;font:13px/1.5 monospace}
+ .pdf-result details{margin-top:10px;border-top:1px solid #e2e8f0;padding-top:8px}
+ .pdf-result summary{cursor:pointer}
+</style></head><body>
+<h1>COCO-RISE: ตรวจข้อมูลก่อนเผยแพร่</h1>
+<p class="lead">ตัวเลขทุกตัวต้องมีคนเปิดเอกสารต้นฉบับแล้วยืนยัน ระบบจะไม่ตั้ง verified ให้เอง</p>
+<p class="lead">เปิด PDF ต้นฉบับเทียบกับข้อความ OCR และข้อความพิมพ์มือทุกชิ้นก่อนกดอนุมัติ หากต้นฉบับไม่พร้อม อย่าอนุมัติ</p>
+<div class="box">
+  <label>โทเคนผู้ดูแล</label>
+  <input id="token" type="password" style="width:320px" placeholder="ค่าจาก IRFA_ADMIN_TOKEN">
+  <input id="who" style="width:200px" placeholder="ชื่อผู้ตรวจ">
+  <button onclick="load()">เปิดรายการ</button>
+  <div class="msg" id="msg"></div>
+</div>
+<div class="box">
+  <h2>ตรวจ PDF ใหม่ก่อนนำเข้าระบบ</h2>
+  <p class="lead">แสดงข้อความที่อ่านได้และตัวเลขที่อาจเป็นวงเงินเพื่อให้เทียบกับต้นฉบับ การตรวจนี้ไม่บันทึกไฟล์ ไม่อนุมัติ และยังไม่เพิ่มข้อมูลให้บอทตอบ</p>
+  <input id="newPdf" type="file" accept="application/pdf,.pdf">
+  <button id="inspectPdfButton" type="button" onclick="inspectUpload()">อ่านและตรวจ PDF</button>
+  <div class="pdf-result" id="pdfReport" aria-live="polite"></div>
+</div>
+<div class="box">
+  <h2>นำเข้า PDF เป็นฉบับร่าง</h2>
+  <p class="lead">เก็บไฟล์ไว้ในพื้นที่กักกัน แล้วแบ่งหัวข้อและจัดประเภทเพื่อรอคนตรวจ ข้อมูลส่วนนี้ยังไม่ถูกค้น ไม่สร้างตัวเลขทุน และไม่เผยแพร่อัตโนมัติ</p>
+  <button id="ingestPdfButton" type="button" onclick="ingestUpload()">เก็บไฟล์และเตรียมข้อมูลรอตรวจ</button>
+  <button type="button" onclick="loadIngestionDocuments()">ดูเอกสารที่นำเข้า</button>
+  <div class="pdf-result" id="ingestionReport" aria-live="polite"></div>
+</div>
+<div id="out"></div>
+<script>
+const tok = () => document.getElementById('token').value.trim();
+const who = () => document.getElementById('who').value.trim();
+const say = t => document.getElementById('msg').textContent = t;
+
+async function api(path, method, body) {
+  const res = await fetch(path, {method: method || 'GET',
+    headers: {'X-Admin-Token': tok(), 'Content-Type': 'application/json'},
+    body: body ? JSON.stringify(body) : undefined});
+  if (!res.ok) { say((await res.json()).detail || res.status); return null; }
+  return res.json();
+}
+
+async function inspectUpload() {
+  const file = document.getElementById('newPdf').files[0];
+  const output = document.getElementById('pdfReport');
+  const button = document.getElementById('inspectPdfButton');
+  output.replaceChildren();
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) { say('กรุณาเลือกไฟล์ PDF'); return; }
+  if (file.size > 15 * 1024 * 1024) { say('ไฟล์ PDF ใหญ่เกิน 15 MB'); return; }
+  if (!tok()) { say('กรุณาใส่โทเคนผู้ดูแลก่อนตรวจ PDF'); return; }
+  button.disabled = true;
+  say('กำลังอ่าน PDF อาจใช้เวลาหลายนาทีถ้าเป็นภาพสแกน...');
+  try {
+    const response = await fetch('/v1/admin/inspect-pdf', {method: 'POST',
+      headers: {'X-Admin-Token': tok(), 'X-Pdf-Name': encodeURIComponent(file.name),
+                'Content-Type': 'application/pdf'}, body: file});
+    const report = await response.json();
+    if (!response.ok) { say(report.detail || 'ตรวจ PDF ไม่สำเร็จ'); return; }
+    say(`อ่าน ${report.pages_total} หน้าแล้ว ข้อมูลยังไม่ถูกบันทึกหรืออนุมัติ`);
+    const note = document.createElement('p');
+    note.className = 'lead';
+    note.textContent = report.note;
+    output.appendChild(note);
+    for (const page of report.pages) {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      const method = {text: 'ชั้นข้อความ', text_partial: 'ชั้นข้อความบางส่วน (OCR ไม่พร้อม)',
+                      ocr: 'OCR ภาพสแกน', needs_ocr: 'อ่านภาพไม่สำเร็จ',
+                      page_too_large: 'หน้ากระดาษใหญ่เกินขอบเขต'}[page.method] || page.method;
+      summary.textContent = `หน้า ${page.page} | ${method} | ตัวเลขที่พบ ${page.amount_candidates.length} จุด | รอตรวจ`;
+      details.appendChild(summary);
+      const figures = document.createElement('p');
+      figures.textContent = page.amount_candidates.length ?
+        `ตัวเลขที่อาจเป็นวงเงิน (ยังไม่ยืนยัน): ${page.amount_candidates.join(', ')}` : 'ไม่พบตัวเลขรูปแบบจำนวนเงิน';
+      details.appendChild(figures);
+      const passage = document.createElement('pre');
+      passage.className = 'ocr';
+      passage.textContent = (page.text || 'อ่านข้อความหน้านี้ไม่ได้') + (page.truncated ? '\n...ข้อความยาวถูกตัดเพื่อแสดงตัวอย่าง' : '');
+      details.appendChild(passage);
+      output.appendChild(details);
+    }
+  } catch (_error) {
+    say('ตรวจ PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const ingestionStatus = status => ({queued: 'รอประมวลผล', extracting: 'กำลังอ่าน PDF',
+  chunking: 'กำลังแบ่งข้อความ', awaiting_review: 'รอคนตรวจ', needs_ocr: 'มีหน้าที่ต้อง OCR',
+  failed: 'ประมวลผลไม่สำเร็จ'})[status] || status;
+const sectionTypeLabel = type => ({title: 'หัวเรื่อง', preamble: 'บทนำ', definition: 'นิยาม',
+  fund_list: 'รายการทุน', amount_table: 'วงเงิน', eligibility: 'คุณสมบัติ',
+  application: 'วิธีสมัคร', timeline: 'กำหนดการ', contact: 'ช่องทางติดต่อ', other: 'อื่น ๆ'})[type] || type;
+
+async function ingestUpload() {
+  const file = document.getElementById('newPdf').files[0];
+  const output = document.getElementById('ingestionReport');
+  const button = document.getElementById('ingestPdfButton');
+  output.replaceChildren();
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) { say('กรุณาเลือกไฟล์ PDF'); return; }
+  if (file.size > 15 * 1024 * 1024) { say('ไฟล์ PDF ใหญ่เกิน 15 MB'); return; }
+  if (!tok()) { say('กรุณาใส่โทเคนผู้ดูแลก่อนนำเข้า PDF'); return; }
+  button.disabled = true;
+  say('รับไฟล์แล้ว กำลังเตรียมงานอ่านเอกสาร...');
+  try {
+    const response = await fetch('/v1/admin/documents', {method: 'POST',
+      headers: {'X-Admin-Token': tok(), 'X-Pdf-Name': encodeURIComponent(file.name),
+                'Content-Type': 'application/pdf'}, body: file});
+    const accepted = await response.json();
+    if (!response.ok) { say(accepted.detail || 'นำเข้า PDF ไม่สำเร็จ'); return; }
+    const duplicate = accepted.duplicate ? ' (ไฟล์นี้เคยนำเข้าแล้ว)' : '';
+    say(`สร้างงาน ${accepted.job_id}${duplicate}`);
+    await watchIngestionJob(accepted.job_id, accepted.document_id);
+  } catch (_error) {
+    say('นำเข้า PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function watchIngestionJob(jobId, documentId) {
+  for (let round = 0; round < 240; round++) {
+    const job = await api('/v1/admin/jobs/' + encodeURIComponent(jobId));
+    if (!job) return;
+    say(`สถานะเอกสาร: ${ingestionStatus(job.status)} | หน้า ${job.pages_processed || 0}/${job.pages_total || '?'}`);
+    if (['awaiting_review', 'needs_ocr', 'failed'].includes(job.status)) {
+      if (job.error) say(`ประมวลผลไม่สำเร็จ: ${job.error}`);
+      else if (job.needs_ocr_pages && job.needs_ocr_pages.length) {
+        say(`อ่านส่วนที่พร้อมแล้ว แต่หน้า ${job.needs_ocr_pages.join(', ')} ยังต้อง OCR`);
+      }
+      await showIngestionDocument(documentId);
+      return;
+    }
+    await wait(1500);
+  }
+  say('งานยังประมวลผลอยู่ สามารถกดดูเอกสารที่นำเข้าเพื่อตรวจสถานะภายหลังได้');
+}
+
+async function loadIngestionDocuments() {
+  const result = await api('/v1/admin/documents?limit=50');
+  if (!result) return;
+  const output = document.getElementById('ingestionReport');
+  output.replaceChildren();
+  if (!result.items.length) {
+    output.textContent = 'ยังไม่มีเอกสารในพื้นที่กักกัน';
+    return;
+  }
+  for (const row of result.items) {
+    const button = window.document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${row.filename} | ${row.published ? 'เผยแพร่ข้อความแล้ว' : ingestionStatus(row.status)}`;
+    button.onclick = () => showIngestionDocument(row.document_id);
+    output.appendChild(button);
+  }
+}
+
+async function showIngestionDocument(documentId) {
+  const documentData = await api('/v1/admin/documents/' + encodeURIComponent(documentId));
+  const chunkData = await api('/v1/admin/documents/' + encodeURIComponent(documentId) + '/chunks?limit=500');
+  if (!documentData || !chunkData) return;
+  const output = document.getElementById('ingestionReport');
+  output.replaceChildren();
+  const heading = window.document.createElement('h3');
+  heading.textContent = `${documentData.filename} | ${documentData.published ? 'เผยแพร่ข้อความแล้ว' : ingestionStatus(documentData.status)} | ${chunkData.count} ชิ้น`;
+  output.appendChild(heading);
+  const warning = window.document.createElement('p');
+  warning.className = 'lead';
+  warning.textContent = documentData.published ?
+    'ข้อความฉบับนี้ผ่านการตรวจและเผยแพร่แล้ว การแก้ไขต้องนำเข้าฉบับใหม่' :
+    'ทุกชิ้นยังเป็นฉบับร่าง การแก้ข้อความไม่ใช่การอนุมัติและยังไม่ทำให้บอทนำไปตอบ';
+  output.appendChild(warning);
+  const sourceButton = window.document.createElement('button');
+  sourceButton.type = 'button';
+  sourceButton.textContent = 'เปิด PDF ในพื้นที่กักกัน';
+  sourceButton.onclick = () => openIngestionSource(documentId);
+  output.appendChild(sourceButton);
+  if (documentData.needs_ocr_pages && documentData.needs_ocr_pages.length) {
+    const missing = window.document.createElement('p');
+    missing.className = 'lead';
+    missing.textContent = `หน้าที่ยังต้อง OCR: ${documentData.needs_ocr_pages.join(', ')}`;
+    output.appendChild(missing);
+  }
+  if (documentData.error) {
+    const error = window.document.createElement('p');
+    error.className = 'src';
+    error.textContent = `รายละเอียด: ${documentData.error}`;
+    output.appendChild(error);
+  }
+  if (['needs_ocr', 'failed'].includes(documentData.status)) {
+    const retry = window.document.createElement('button');
+    retry.type = 'button';
+    retry.textContent = 'ลองประมวลผลอีกครั้ง';
+    retry.onclick = () => retryIngestionJob(documentData.job_id, documentId);
+    output.appendChild(retry);
+  }
+  const editable = documentData.status === 'awaiting_review' && !documentData.published;
+  if (!editable && chunkData.items.length) {
+    const readOnly = window.document.createElement('p');
+    readOnly.className = 'lead';
+    readOnly.textContent = 'ส่วนที่อ่านได้เปิดดูได้ แต่จะแก้ไขได้หลัง OCR ครบและสถานะเปลี่ยนเป็นรอคนตรวจ เพื่อไม่ให้การลองใหม่เขียนทับงานของผู้ตรวจ';
+    output.appendChild(readOnly);
+  }
+  for (const chunk of chunkData.items) output.appendChild(chunkEditor(documentId, chunk, editable));
+  if (editable && chunkData.count > 0 && chunkData.count === chunkData.items.length) {
+    const reviewBox = window.document.createElement('div');
+    reviewBox.className = 'box';
+    const title = window.document.createElement('h3');
+    title.textContent = 'ยืนยันหลังเปิด PDF ต้นฉบับและเทียบข้อความทุกหน้า';
+    reviewBox.appendChild(title);
+    const note = window.document.createElement('p');
+    note.className = 'lead';
+    note.textContent = 'ขั้นนี้เผยแพร่เฉพาะข้อความที่ตรวจแล้ว ไม่สร้างตัวเลขวงเงินหรือกฎตรวจสิทธิ์อัตโนมัติ';
+    reviewBox.appendChild(note);
+    const checks = [];
+    for (let page = 1; page <= documentData.pages_total; page++) {
+      const label = window.document.createElement('label');
+      label.style.display = 'block';
+      const checkbox = window.document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = String(page);
+      checks.push(checkbox);
+      label.appendChild(checkbox);
+      label.appendChild(window.document.createTextNode(` ตรวจเทียบหน้า ${page} กับ PDF ต้นฉบับแล้ว`));
+      reviewBox.appendChild(label);
+    }
+    const button = window.document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'อนุมัติข้อความและเผยแพร่';
+    button.onclick = async () => {
+      if (!who()) { say('กรุณาระบุชื่อผู้ตรวจ'); return; }
+      const confirmedPages = checks.filter(check => check.checked).map(check => Number(check.value));
+      if (confirmedPages.length !== documentData.pages_total) { say('กรุณาตรวจและยืนยันทุกหน้า'); return; }
+      button.disabled = true;
+      const result = await api('/v1/admin/documents/' + encodeURIComponent(documentId) + '/publish',
+        'POST', {reviewer: who(), source_sha256: documentData.content_sha256,
+                 confirmed_pages: confirmedPages});
+      if (result) {
+        say(`เผยแพร่ข้อความที่ตรวจแล้ว ${result.chunk_count} ชิ้น (ตัวเลขทุนยังต้องลงข้อมูลโครงสร้างและตรวจแยก)`);
+        await showIngestionDocument(documentId);
+      } else button.disabled = false;
+    };
+    reviewBox.appendChild(button);
+    output.appendChild(reviewBox);
+  } else if (editable && chunkData.count > chunkData.items.length) {
+    const note = window.document.createElement('p');
+    note.textContent = 'เอกสารนี้มีข้อความเกิน 500 ชิ้น จึงยังไม่เปิดปุ่มเผยแพร่ในหน้านี้เพื่อป้องกันการตรวจไม่ครบ';
+    output.appendChild(note);
+  }
+}
+
+function chunkEditor(documentId, chunk, editable) {
+  const details = window.document.createElement('details');
+  const summary = window.document.createElement('summary');
+  summary.textContent = `หน้า ${chunk.page} | ${chunk.clause || 'ไม่พบเลขข้อ'} | ${sectionTypeLabel(chunk.section_type)} | ${chunk.verified ? 'ตรวจแล้ว' : 'ฉบับร่าง'}`;
+  details.appendChild(summary);
+  const textarea = window.document.createElement('textarea');
+  textarea.value = chunk.text;
+  textarea.style.width = '100%';
+  textarea.rows = 7;
+  textarea.readOnly = !editable;
+  details.appendChild(textarea);
+  const select = window.document.createElement('select');
+  const types = ['title','preamble','definition','fund_list','amount_table','eligibility','application','timeline','contact','other'];
+  for (const type of types) {
+    const option = window.document.createElement('option');
+    option.value = type; option.textContent = sectionTypeLabel(type); option.selected = type === chunk.section_type;
+    select.appendChild(option);
+  }
+  select.disabled = !editable;
+  details.appendChild(select);
+  if (!editable) return details;
+  const save = window.document.createElement('button');
+  save.type = 'button'; save.textContent = 'บันทึกการแก้ฉบับร่าง';
+  save.onclick = async () => {
+    if (!who()) { say('กรุณาระบุชื่อผู้ตรวจก่อนบันทึก'); return; }
+    const updated = await api(`/v1/admin/documents/${encodeURIComponent(documentId)}/chunks/${encodeURIComponent(chunk.id)}`,
+      'PATCH', {text: textarea.value, section_type: select.value, reviewer: who()});
+    if (updated) say(`บันทึกฉบับร่างหน้า ${updated.page} แล้ว โดย ${updated.last_edited_by}`);
+  };
+  details.appendChild(save);
+  return details;
+}
+
+async function retryIngestionJob(jobId, documentId) {
+  const job = await api('/v1/admin/jobs/' + encodeURIComponent(jobId) + '/retry', 'POST');
+  if (!job) return;
+  say('ส่งงานกลับไปประมวลผลแล้ว');
+  await watchIngestionJob(jobId, documentId);
+}
+
+async function openIngestionSource(documentId) {
+  const popup = window.open('', '_blank');
+  if (!popup) { say('เบราว์เซอร์บล็อกหน้าต่าง PDF กรุณาอนุญาต pop-up แล้วลองใหม่'); return; }
+  popup.opener = null;
+  try {
+    const response = await fetch('/v1/admin/documents/' + encodeURIComponent(documentId) + '/source',
+      {headers: {'X-Admin-Token': tok()}});
+    if (!response.ok) {
+      popup.close();
+      say((await response.json()).detail || 'เปิด PDF ไม่สำเร็จ');
+      return;
+    }
+    const url = URL.createObjectURL(await response.blob());
+    popup.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 300000);
+  } catch (_error) {
+    popup.close();
+    say('เปิด PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+  }
+}
+
+async function load() {
+  const d = await api('/v1/admin/pending');
+  if (!d) return;
+  say(`ตัวเลขรอตรวจ ${d.facts.length} แถว ข้อความรอตรวจ ${d.chunk_count} ชิ้น`);
+  document.getElementById('out').innerHTML = `
+    <h2>ข้อความจากเอกสารสแกนที่ยังไม่มีใครตรวจ</h2>
+    <table><thead><tr><th>เอกสาร</th><th>จำนวน</th><th>ตรวจต้นฉบับ</th></tr></thead><tbody id="docs"></tbody></table>
+    <h2>ตัวเลขที่ยังไม่ได้ตรวจกับต้นฉบับ</h2>
+    <p class="lead">เปิดเอกสารตามคอลัมน์อ้างอิง ถ้าตัวเลขต่าง ให้แก้ในช่องแล้วค่อยกดยืนยัน</p>
+    <table><thead><tr><th>ทุน</th><th>ประเภท</th><th>จำนวนเงิน</th><th>อ้างอิง</th><th></th></tr></thead>
+    <tbody id="facts"></tbody></table>`;
+  const docs = document.getElementById('docs');
+  for (const [doc, count] of Object.entries(d.chunks_by_doc)) {
+    const row = docs.insertRow();
+    row.insertCell().textContent = doc;
+    row.insertCell().textContent = `${count} ชิ้น`;
+    const actions = row.insertCell();
+    actions.appendChild(sourceButton(doc));
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'ดูข้อความ OCR และพิมพ์มือ';
+    details.appendChild(summary);
+    const passages = document.createElement('pre');
+    passages.className = 'ocr';
+    passages.textContent = d.chunks.filter(c => c.doc === doc)
+      .map(c => `หน้า ${c.page} ${c.clause}: ${c.text}`).join('\n\n');
+    details.appendChild(passages);
+    actions.appendChild(details);
+    const approve = document.createElement('button');
+    approve.textContent = 'อนุมัติทั้งฉบับ';
+    approve.onclick = () => okDoc(doc);
+    actions.appendChild(approve);
+  }
+  if (!docs.rows.length) docs.innerHTML = '<tr><td colspan="3">ไม่มี</td></tr>';
+  const facts = document.getElementById('facts');
+  for (const f of d.facts) {
+    const row = facts.insertRow();
+    row.insertCell().textContent = f.fund + (f.tier ? ' ' + f.tier : '');
+    row.insertCell().textContent = f.amount_type === 'ceiling' ? 'เพดาน' : `จัดสรรปี ${f.fiscal_year}`;
+    const amount = document.createElement('input');
+    amount.className = 'num';
+    amount.id = 'amt_' + f.id;
+    amount.value = f.amount === null ? '' : f.amount;
+    row.insertCell().appendChild(amount);
+    const source = row.insertCell();
+    source.className = 'src';
+    source.textContent = `${f.source.doc} ${f.source.clause} หน้า ${f.source.page} `;
+    source.appendChild(sourceButton(f.source.doc));
+    const approve = document.createElement('button');
+    approve.textContent = 'ยืนยันถูกต้อง';
+    approve.onclick = () => okFact(f.id);
+    row.insertCell().appendChild(approve);
+  }
+  if (!facts.rows.length) facts.innerHTML = '<tr><td colspan="5" class="ok">ตรวจครบแล้วทุกแถว</td></tr>';
+}
+
+function sourceButton(doc) {
+  const button = document.createElement('button');
+  button.className = 'ghost';
+  button.textContent = 'เปิด PDF ต้นฉบับ';
+  button.onclick = () => openSource(doc);
+  return button;
+}
+
+async function openSource(doc) {
+  const tab = window.open('', '_blank');
+  if (!tab) { say('เบราว์เซอร์บล็อกหน้าต่างใหม่ กรุณาอนุญาตแล้วลองอีกครั้ง'); return; }
+  try {
+    const response = await fetch('/v1/admin/source?doc=' + encodeURIComponent(doc),
+      {headers: {'X-Admin-Token': tok()}, cache: 'no-store'});
+    if (!response.ok) {
+      tab.close();
+      const error = await response.json();
+      say(error.detail || 'เปิด PDF ต้นฉบับไม่สำเร็จ');
+      return;
+    }
+    const url = URL.createObjectURL(await response.blob());
+    tab.opener = null;
+    tab.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 600000);
+  } catch (_error) {
+    tab.close();
+    say('เปิด PDF ต้นฉบับไม่สำเร็จ');
+  }
+}
+
+async function okFact(id) {
+  if (!who()) { say('กรุณาระบุชื่อผู้ตรวจที่เปิดเอกสารต้นฉบับ'); return; }
+  const raw = document.getElementById('amt_' + id).value.replace(/[, ]/g, '');
+  if (raw !== '' && (!/^[0-9]+$/.test(raw) || !Number.isSafeInteger(Number(raw)))) {
+    say('จำนวนเงินต้องเป็นเลขจำนวนเต็มที่ไม่ติดลบ'); return;
+  }
+  const r = await api('/v1/admin/verify-fact', 'POST',
+    {id, reviewer: who(), amount: raw === '' ? null : Number(raw)});
+  if (r) { say(r.ok ? `ยืนยัน ${id} แล้ว` : r.error); load(); }
+}
+
+async function okDoc(doc) {
+  if (!who()) { say('กรุณาระบุชื่อผู้ตรวจที่เปิดเอกสารต้นฉบับ'); return; }
+  if (!confirm('เปิดเอกสารต้นฉบับและตรวจข้อความ OCR กับข้อความพิมพ์มือทุกชิ้นของฉบับนี้แล้วใช่หรือไม่')) return;
+  const r = await api('/v1/admin/verify-doc', 'POST', {doc, reviewer: who()});
+  if (r) { say(r.ok ? `${r.doc}: อนุมัติ ${r.approved} ชิ้น ${r.note}` : r.error); load(); }
+}
+</script></body></html>

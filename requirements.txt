@@ -1,0 +1,8 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2
+rank-bm25>=0.2.2
+httpx>=0.27
+pymupdf>=1.24          # scripts/ingest.py reads the announcement PDFs
+pytest>=8.0             # ชุดทดสอบใน tests/
+tzdata>=2025.2          # ZoneInfo Asia/Bangkok บน Windows ที่ไม่มี IANA time-zone database ในระบบ

@@ -1,0 +1,902 @@
+[
+ {
+  "id": "f01",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นต้น",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 100000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.5)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f02",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นกลาง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 150000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.5)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f03",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นสูง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 250000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.5)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f07",
+  "fund": "ทุนวิจัยสถาบัน",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 25000,
+  "max_grants_per_person": null,
+  "total_cap": 25000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.2)",
+   "page": 3
+  },
+  "max_grants_per_year": 1,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f08",
+  "fund": "ทุนวิจัยในชั้นเรียน",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 10000,
+  "max_grants_per_person": null,
+  "total_cap": 10000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.4)",
+   "page": 3
+  },
+  "max_grants_per_year": 1,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f09",
+  "fund": "ทุนวิจัยเพื่อพัฒนางานประจำ",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 20000,
+  "max_grants_per_person": null,
+  "total_cap": 80000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.3)",
+   "page": 3
+  },
+  "max_grants_per_year": 4,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f10",
+  "fund": "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 200000,
+  "max_grants_per_person": null,
+  "total_cap": 200000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.1)",
+   "page": 3
+  },
+  "max_grants_per_year": 1,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f11",
+  "fund": "ทุนพัฒนาศูนย์วิจัย",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 250000,
+  "max_grants_per_person": null,
+  "total_cap": 250000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.7)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f12",
+  "fund": "ทุนฝึกอบรมนักวิจัยหลังปริญญาเอก",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 400000,
+  "max_grants_per_person": null,
+  "total_cap": 800000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.8)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f13",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นต้น",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 100000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.6)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f14",
+  "fund": "ทุนพัฒนากลุ่มวิจัยบูรณาการ",
+  "tier": "ชั้นต้น",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 200000,
+  "max_grants_per_person": null,
+  "total_cap": 1000000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.10)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f15",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นกลาง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 150000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.6)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f16",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นสูง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 250000,
+  "max_grants_per_person": 1,
+  "total_cap": 500000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.6)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f17",
+  "fund": "ทุนพัฒนากลุ่มวิจัยบูรณาการ",
+  "tier": "ชั้นกลาง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 300000,
+  "max_grants_per_person": null,
+  "total_cap": 1000000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.10)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f18",
+  "fund": "ทุนพัฒนากลุ่มวิจัยบูรณาการ",
+  "tier": "ชั้นสูง",
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 500000,
+  "max_grants_per_person": null,
+  "total_cap": 1000000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.10)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": null
+ },
+ {
+  "id": "f19",
+  "fund": "ทุนสนับสนุนการได้รับทุนวิจัยภายนอก",
+  "tier": null,
+  "fiscal_year": 2569,
+  "amount_type": "allocated",
+  "amount": 100000,
+  "max_grants_per_person": 1,
+  "total_cap": 300000,
+  "source": {
+   "doc": "ประกาศ 42/2568",
+   "clause": "ข้อ 4 (1.9)",
+   "page": 4
+  },
+  "max_grants_per_year": null,
+  "verified": false,
+  "note": "ทั้งนี้ต้องไม่เกินร้อยละ 10 ของเงินทุนที่ได้รับจากภายนอก"
+ },
+ {
+  "id": "c01",
+  "fund": "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 1200000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1200000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.1",
+   "page": 4
+  }
+ },
+ {
+  "id": "c02",
+  "fund": "ทุนวิจัยสถาบัน",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 25000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": 2,
+  "total_cap": 50000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.2",
+   "page": 4
+  }
+ },
+ {
+  "id": "c03",
+  "fund": "ทุนวิจัยเพื่อพัฒนางานประจำ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 20000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": 4,
+  "total_cap": 80000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.3",
+   "page": 4
+  }
+ },
+ {
+  "id": "c04",
+  "fund": "ทุนวิจัยในชั้นเรียน",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 10000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": 2,
+  "total_cap": 20000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.4",
+   "page": 4
+  }
+ },
+ {
+  "id": "c05",
+  "fund": "ทุนสนับสนุนงานวิจัย นวัตกรรม และสิ่งประดิษฐ์เพื่อการเรียนการสอน",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 20000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": 2,
+  "total_cap": 40000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.5",
+   "page": 4
+  }
+ },
+ {
+  "id": "c06",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1000000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.6",
+   "page": 4
+  }
+ },
+ {
+  "id": "c06a",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นต้น",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 150000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1000000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.6.1",
+   "page": 4
+  }
+ },
+ {
+  "id": "c06b",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นกลาง",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 200000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1000000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.6.2",
+   "page": 4
+  }
+ },
+ {
+  "id": "c06c",
+  "fund": "ทุนวิจัยความเป็นเลิศ",
+  "tier": "ชั้นสูง",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 250000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1000000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.6.3",
+   "page": 4
+  }
+ },
+ {
+  "id": "c07",
+  "fund": "ทุนพัฒนากลุ่มวิจัยบูรณาการ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 1250000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": 2,
+  "total_cap": 2500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.7",
+   "page": 4
+  }
+ },
+ {
+  "id": "c08",
+  "fund": "ทุนนักวิจัยอาวุโส",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 1000000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1000000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.8",
+   "page": 4
+  }
+ },
+ {
+  "id": "c09",
+  "fund": "ทุนพัฒนาศูนย์วิจัย",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 2500000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 2500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.9",
+   "page": 4
+  }
+ },
+ {
+  "id": "c10",
+  "fund": "ทุนฝึกอบรมนักวิจัยหลังปริญญาเอก",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 400000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 1200000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.10",
+   "page": 4
+  }
+ },
+ {
+  "id": "c11",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.11",
+   "page": 4
+  }
+ },
+ {
+  "id": "c11a",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นต้น",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 100000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.11.1",
+   "page": 4
+  }
+ },
+ {
+  "id": "c11b",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นกลาง",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 200000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.11.2",
+   "page": 4
+  }
+ },
+ {
+  "id": "c11c",
+  "fund": "ทุนนวัตกรรมความเป็นเลิศ",
+  "tier": "ชั้นสูง",
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 250000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.11.3",
+   "page": 4
+  }
+ },
+ {
+  "id": "c12",
+  "fund": "ทุนสนับสนุนการได้รับทุนวิจัยภายนอก",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 100000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 300000,
+  "verified": true,
+  "note": "ทั้งนี้ต้องไม่เกินร้อยละ 10 ของเงินทุนที่ได้รับจากภายนอก",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 1.12",
+   "page": 4
+  }
+ },
+ {
+  "id": "c13",
+  "fund": "เงินรางวัลการตีพิมพ์ ผู้แต่งชื่อแรก",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 3500000,
+  "verified": true,
+  "note": "อัตราต่อบทความขึ้นกับระดับวารสาร ตั้งแต่ 25,000 ถึง 150,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.2",
+   "page": 5
+  }
+ },
+ {
+  "id": "c14",
+  "fund": "เงินรางวัลการตีพิมพ์ ผู้ประพันธ์บรรณกิจ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": null,
+  "verified": true,
+  "note": "อัตราต่อบทความขึ้นกับระดับวารสาร ตั้งแต่ 7,500 ถึง 80,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.3",
+   "page": 6
+  }
+ },
+ {
+  "id": "c20",
+  "fund": "ทุนทำวิจัยในต่างประเทศ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 400000,
+  "verified": true,
+  "note": "อัตราขึ้นกับอันดับสถาบันและประเทศปลายทาง ประเทศนอกกลุ่มอาเซียนไม่เกิน 150,000 บาท กลุ่มอาเซียนไม่เกิน 100,000 บาท และลดลงเมื่อสถาบันอยู่อันดับ 301 ขึ้นไป",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.1",
+   "page": 5
+  }
+ },
+ {
+  "id": "c21",
+  "fund": "ค่าตอบแทนผลงานที่เผยแพร่ในการประชุมวิชาการชั้นนำ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 135000,
+  "verified": true,
+  "note": "ระดับ A+ ไม่เกิน 20,000 บาท ระดับ A ไม่เกิน 15,000 บาท ระดับ B ไม่เกิน 10,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.4",
+   "page": 6
+  }
+ },
+ {
+  "id": "c22",
+  "fund": "ค่าตอบแทนผลงานที่ได้รับการอ้างอิงสูง",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 100000,
+  "verified": true,
+  "note": "ระดับเพชรไม่เกิน 15,000 บาท ระดับทองไม่เกิน 10,000 บาท ระดับเงินไม่เกิน 5,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.5",
+   "page": 6
+  }
+ },
+ {
+  "id": "c23",
+  "fund": "ค่าตอบแทนผลงานวิจัยที่ได้รับรางวัลบทความดีเด่น",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 50000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.6",
+   "page": 6
+  }
+ },
+ {
+  "id": "c24",
+  "fund": "ค่าตอบแทนผลงานสิ่งประดิษฐ์และนวัตกรรมที่ได้รับรางวัล",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 50000,
+  "verified": true,
+  "note": "ระดับนานาชาติรางวัลชนะเลิศไม่เกิน 10,000 บาท รางวัลอื่นไม่เกิน 5,000 บาท ระดับชาติรางวัลชนะเลิศไม่เกิน 5,000 บาท รางวัลอื่นไม่เกิน 3,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.7",
+   "page": 7
+  }
+ },
+ {
+  "id": "c25",
+  "fund": "ทุนสนับสนุนผู้เชี่ยวชาญจากภายนอกวิทยาลัย",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 600000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 600000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.8",
+   "page": 7
+  }
+ },
+ {
+  "id": "c26",
+  "fund": "ทุนสนับสนุนการวิจัยระยะสั้น",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 150000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 450000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.9",
+   "page": 7
+  }
+ },
+ {
+  "id": "c27",
+  "fund": "ค่าตอบแทนผลงานที่ได้รับสิทธิบัตรหรืออนุสิทธิบัตร",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 150000,
+  "verified": true,
+  "note": "สิทธิบัตรไม่เกิน 35,000 บาท อนุสิทธิบัตรไม่เกิน 15,000 บาท ลิขสิทธิ์ไม่เกิน 3,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.10",
+   "page": 7
+  }
+ },
+ {
+  "id": "c28",
+  "fund": "ทุนนำเสนอผลงานทางวิชาการ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": "ต่างประเทศตามจ่ายจริงไม่เกิน 80,000 บาท ยกเว้นอนุภูมิภาคลุ่มน้ำโขง สิงคโปร์ และมาเลเซีย ไม่เกิน 40,000 บาท นานาชาติในประเทศไม่เกิน 30,000 บาท ระดับชาติไม่เกิน 15,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.11",
+   "page": 7
+  }
+ },
+ {
+  "id": "c29",
+  "fund": "ทุนนำเสนอผลงานนวัตกรรมและสิ่งประดิษฐ์",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": null,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 200000,
+  "verified": true,
+  "note": "อัตราเดียวกับทุนนำเสนอผลงานทางวิชาการ ต่างกันที่วงเงินรวมต่อปี",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.11",
+   "page": 7
+  }
+ },
+ {
+  "id": "c30",
+  "fund": "ทุนสนับสนุนความเป็นเลิศทางวิชาการร่วมกับต่างประเทศ",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 200000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 200000,
+  "verified": true,
+  "note": "ค่าเดินทางและค่าที่พักตามจ่ายจริงไม่เกิน 200,000 บาท ยกเว้นอนุภูมิภาคลุ่มน้ำโขง สิงคโปร์ และมาเลเซีย ไม่เกิน 50,000 บาท",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.12",
+   "page": 8
+  }
+ },
+ {
+  "id": "c31",
+  "fund": "เงินสมทบค่าธรรมเนียมตีพิมพ์",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 50000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 500000,
+  "verified": true,
+  "note": "ครอบคลุม Page Charge และ Manuscript Editing Service ตามจ่ายจริง",
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.13",
+   "page": 8
+  }
+ },
+ {
+  "id": "c32",
+  "fund": "ค่าตอบแทนสื่อการสอนออนไลน์",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 40000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 240000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.14",
+   "page": 8
+  }
+ },
+ {
+  "id": "c33",
+  "fund": "เงินรางวัลผลงานการเขียนหนังสือหรือตำรา",
+  "tier": null,
+  "fiscal_year": null,
+  "amount_type": "ceiling",
+  "amount": 40000,
+  "max_grants_per_person": null,
+  "max_grants_per_year": null,
+  "total_cap": 80000,
+  "verified": true,
+  "note": null,
+  "source": {
+   "doc": "หลักเกณฑ์กลาง",
+   "clause": "บัญชีแนบท้าย ข้อ 2.15",
+   "page": 8
+  }
+ }
+]

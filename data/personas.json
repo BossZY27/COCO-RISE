@@ -1,0 +1,60 @@
+[
+ {
+  "id": "P1",
+  "name": "อาจารย์เอ (ทดสอบ)",
+  "staff_type": "พนักงานมหาวิทยาลัย",
+  "department": "วิทยาลัยการคอมพิวเตอร์",
+  "grants_this_year": {},
+  "source": "self_declared",
+  "as_of": "2569-01-15"
+ },
+ {
+  "id": "P2",
+  "name": "อาจารย์บี (ทดสอบ)",
+  "staff_type": "พนักงานมหาวิทยาลัย",
+  "department": "วิทยาลัยการคอมพิวเตอร์",
+  "grants_this_year": {
+   "ทุนวิจัยความเป็นเลิศ": 1
+  },
+  "source": "admin_verified",
+  "as_of": "2569-01-15"
+ },
+ {
+  "id": "P3",
+  "name": "คุณซี (ทดสอบ)",
+  "staff_type": "ลูกจ้างมหาวิทยาลัย",
+  "department": "วิทยาลัยการคอมพิวเตอร์",
+  "grants_this_year": {},
+  "source": "self_declared",
+  "as_of": "2569-01-15"
+ },
+ {
+  "id": "P4",
+  "name": "อาจารย์ดี (ทดสอบ)",
+  "staff_type": "พนักงานมหาวิทยาลัย",
+  "department": "คณะวิทยาศาสตร์",
+  "grants_this_year": {},
+  "source": "self_declared",
+  "as_of": "2569-01-15"
+ },
+ {
+  "id": "P5",
+  "name": "ผู้ใช้ที่ยังไม่กรอกข้อมูล",
+  "staff_type": null,
+  "department": null,
+  "grants_this_year": {},
+  "source": "unknown",
+  "as_of": null
+ },
+ {
+  "id": "P6",
+  "name": "อาจารย์อี (ทดสอบ)",
+  "staff_type": "พนักงานมหาวิทยาลัย",
+  "department": "วิทยาลัยการคอมพิวเตอร์",
+  "grants_this_year": {
+   "เงินรางวัลการตีพิมพ์ ผู้แต่งชื่อแรก": 1
+  },
+  "source": "self_declared",
+  "as_of": "2569-01-15"
+ }
+]

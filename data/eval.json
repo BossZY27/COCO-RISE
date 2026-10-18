@@ -1,0 +1,140 @@
+[
+ {
+  "persona": "P1",
+  "question": "ทุนวิจัยความเป็นเลิศ ชั้นต้น ปีงบ 2569 ขอได้เท่าไร",
+  "expect_amount": "100,000",
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified",
+  "expect_amount_hidden": true
+ },
+ {
+  "persona": "P2",
+  "question": "ผมขอทุนวิจัยความเป็นเลิศเพิ่มอีกทุนได้ไหม",
+  "expect_amount": null,
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified"
+ },
+ {
+  "persona": "P1",
+  "question": "ทุนวิจัยสถาบันปีงบ 2569 ให้ทุนละเท่าไร",
+  "expect_amount": "25,000",
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified",
+  "expect_amount_hidden": false
+ },
+ {
+  "persona": "P3",
+  "question": "ขอทุนวิจัยในชั้นเรียนได้ไหม",
+  "expect_amount": "10,000",
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified",
+  "expect_amount_hidden": true
+ },
+ {
+  "persona": "P4",
+  "question": "ผมขอทุนวิจัยความเป็นเลิศได้ไหม",
+  "expect_amount": null,
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified"
+ },
+ {
+  "persona": "P5",
+  "question": "ทุนความเป็นเลิศชั้นกลางได้เท่าไร",
+  "expect_amount": "150,000",
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified",
+  "expect_amount_hidden": true
+ },
+ {
+  "persona": "P1",
+  "question": "เพดานตามหลักเกณฑ์กลางของทุนวิจัยความเป็นเลิศชั้นต้นคือเท่าไร",
+  "expect_amount": "150,000",
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "ทุนพัฒนาศูนย์วิจัยปีงบ 2569 ได้เท่าไร",
+  "expect_amount": "250,000",
+  "expect_doc": "ประกาศ 42/2568",
+  "expect_verdict": "no_rule",
+  "expect_status": "withheld_unverified",
+  "expect_amount_hidden": true
+ },
+ {
+  "persona": "P1",
+  "question": "เพดานของทุนวิจัยสถาบันตามหลักเกณฑ์กลางคือเท่าไร",
+  "expect_amount": "25,000",
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "ทุนนักวิจัยอาวุโสให้ได้สูงสุดเท่าไร",
+  "expect_amount": "1,000,000",
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "เพดานหลักเกณฑ์กลางทุนนวัตกรรมความเป็นเลิศชั้นกลาง",
+  "expect_amount": "200,000",
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P6",
+  "question": "ขอเงินรางวัลการตีพิมพ์ ผู้ประพันธ์บรรณกิจ ได้ไหม",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": "not_eligible"
+ },
+ {
+  "persona": "P1",
+  "question": "พระขอได้มั้ย",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "ใครขอทุนได้บ้าง",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "เงินสมทบหมายถึงอะไร",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "มีทุนอะไรบ้าง",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "ทุนนำเสนอผลงานทางวิชาการมีรายละเอียดอะไรบ้าง",
+  "expect_amount": null,
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ },
+ {
+  "persona": "P1",
+  "question": "ทุนทำวิจัยในต่างประเทศได้เท่าไร",
+  "expect_amount": "400,000",
+  "expect_doc": "หลักเกณฑ์กลาง",
+  "expect_verdict": null
+ }
+]

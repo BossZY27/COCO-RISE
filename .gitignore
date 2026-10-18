@@ -1,0 +1,22 @@
+.agent-config/
+.claude/
+agent-config.local.yaml
+/AGENTS.md
+/CLAUDE.md
+/agents/codex.md
+
+# demo runtime
+.env
+data/*.bak
+data/*.tmp
+__pycache__/
+.pytest_cache/
+logs/
+scratch/
+tmp/
+eval_with_llm.txt
+eval_clean.txt
+data/embeddings.json
+data/ingestion/
+todo/*
+!todo/README.md
