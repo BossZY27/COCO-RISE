@@ -245,6 +245,139 @@ def test_a_reference_the_conversation_resolves_is_not_flagged():
     assert slots["fund"] == "ทุนวิจัยสถาบัน" and slots["unresolved_reference"] is False
 
 
+@pytest.mark.parametrize("question", ["มันคือทุนอะไร", "อันนี้คือทุนอะไร"])
+def test_natural_definition_followup_uses_named_fund_from_this_chat(question):
+    history = ["อธิบายทุนวิจัยสถาบันมาหน่อย"]
+    slots = pipeline.analyze(question, history)
+    assert slots["fund"] == "ทุนวิจัยสถาบัน"
+    assert slots["intent"] == "definition"
+    result = asyncio.run(pipeline.run(question, history=history))
+    assert result["verify"]["ok"]
+    assert "ทุนส่งเสริมการวิจัย" in result["answer"]
+    assert result["citations"]
+
+
+def test_natural_definition_followup_does_not_guess_without_a_named_fund():
+    slots = pipeline.analyze("มันคือทุนอะไร", ["มีทุนอะไรบ้าง"])
+    assert slots["fund"] is None
+    result = asyncio.run(pipeline.run("มันคือทุนอะไร", history=["มีทุนอะไรบ้าง"]))
+    assert result["verify"]["ok"]
+    assert "ทุนวิจัยสถาบันอยู่ในหมวด" not in result["answer"]
+
+
+def test_conflicting_clause_and_fund_name_asks_for_clarification():
+    question = "อันนี้คือทุนอะไร (ข้อ 1.1), ทุนวิจัยสถาบัน"
+    result = asyncio.run(pipeline.run(question, history=["อธิบายทุนวิจัยสถาบันมาหน่อย"]))
+    assert result["slots"]["intent"] == "clarify_reference"
+    assert result["verify"]["ok"]
+    assert "ข้อ 1.1" in result["answer"] and "ข้อ 1.2" in result["answer"]
+    assert "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ" in result["answer"]
+    assert "ทุนวิจัยสถาบัน" in result["answer"]
+    assert len(result["citations"]) == 2
+    assert "25,000" not in result["answer"]
+
+
+def test_matching_clause_and_fund_name_keeps_the_definition_answer():
+    result = asyncio.run(pipeline.run("(ข้อ 1.2), ทุนวิจัยสถาบัน คืออะไร"))
+    assert result["slots"]["intent"] == "definition"
+    assert result["verify"]["ok"]
+    assert "ทุนส่งเสริมการวิจัย" in result["answer"]
+
+
+@pytest.mark.parametrize("question", [
+    "ทุนวิจัยสถาบันข้อ 1.2 อยู่หมวดไหน",
+    "ทุนวิจัยสถาบันเป็นทุนประเภทอะไร",
+])
+def test_named_fund_category_question_uses_the_reviewed_catalogue(question):
+    result = asyncio.run(pipeline.run(question))
+    assert result["slots"]["fund"] == "ทุนวิจัยสถาบัน"
+    assert result["slots"]["intent"] == "definition"
+    assert result["verify"]["ok"]
+    assert "ทุนส่งเสริมการวิจัย" in result["answer"]
+    assert result["citations"]
+
+
+def test_switching_funds_after_a_definition_preserves_the_information_request():
+    result = asyncio.run(pipeline.run("แล้วทุนวิจัยในชั้นเรียนล่ะ", history=["ทุนวิจัยสถาบันคืออะไร"]))
+    assert result["slots"]["fund"] == "ทุนวิจัยในชั้นเรียน"
+    assert result["slots"]["intent"] == "definition"
+    assert result["verify"]["ok"]
+    assert "ทุนส่งเสริมการวิจัย" in result["answer"]
+    assert result["citations"]
+
+
+def test_annual_announcement_clause_is_not_mistaken_for_central_annex():
+    slots = pipeline.analyze("ประกาศ 42/2568 ข้อ 1.1 ทุนวิจัยสถาบันคืออะไร")
+    assert slots["intent"] != "clarify_reference"
+
+
+@pytest.mark.parametrize("question, fund", [
+    ("หลักเกณฑ์กลางข้อ 1.2 คือทุนอะไร", "ทุนวิจัยสถาบัน"),
+    ("ตามบัญชีแนบท้าย ข้อ 2.15 คือทุนอะไร", "เงินรางวัลผลงานการเขียนหนังสือหรือตำรา"),
+])
+def test_explicit_central_annex_clause_can_identify_its_fund(question, fund):
+    result = asyncio.run(pipeline.run(question))
+    assert result["slots"]["fund"] == fund
+    assert result["slots"]["intent"] == "definition"
+    assert result["verify"]["ok"]
+    assert fund in result["answer"]
+    assert result["citations"]
+
+
+def test_unspecified_document_clause_does_not_guess_its_fund():
+    slots = pipeline.analyze("ข้อ 1.2 คือทุนอะไร")
+    assert slots["fund"] is None
+
+
+def test_annual_document_clause_does_not_reuse_the_central_annex_mapping():
+    slots = pipeline.analyze("ประกาศ 42/2568 ข้อ 1.2 คือทุนอะไร")
+    assert slots["fund"] is None
+
+
+def test_followup_after_an_explicit_annex_clause_keeps_the_same_fund():
+    history = ["หลักเกณฑ์กลางข้อ 1.2 คือทุนอะไร"]
+    result = asyncio.run(pipeline.run("แล้วเพดานเท่าไร", history=history))
+    assert result["slots"]["fund"] == "ทุนวิจัยสถาบัน"
+    assert result["slots"]["intent"] == "ceiling"
+    assert result["verify"]["ok"]
+
+
+def test_a_new_clause_number_must_not_inherit_the_previous_clause_fund():
+    history = ["หลักเกณฑ์กลางข้อ 1.2 คือทุนอะไร"]
+    slots = pipeline.analyze("แล้วข้อ 2.15 ล่ะ", history=history)
+    assert slots["fund"] is None
+
+
+def test_followup_does_not_assume_a_fund_from_an_unresolved_clause_conflict():
+    history = ["หลักเกณฑ์กลางข้อ 1.1 ทุนวิจัยสถาบันคืออะไร"]
+    result = asyncio.run(pipeline.run("แล้วเพดานเท่าไร", history=history))
+    assert result["slots"]["fund"] is None
+    assert result["slots"]["intent"] == "clarify_reference"
+    assert result["verify"]["ok"]
+    assert "25,000" not in result["answer"]
+
+
+def test_clarification_answer_matches_streaming_route():
+    question = "อันนี้คือทุนอะไร (ข้อ 1.1), ทุนวิจัยสถาบัน"
+
+    async def streamed():
+        return [event async for event in pipeline.run_stream(question)]
+
+    regular = asyncio.run(pipeline.run(question))
+    events = asyncio.run(streamed())
+    assert events[-1]["answer"] == regular["answer"]
+    assert events[-1]["citations"] == regular["citations"]
+    assert events[-1]["verify"]["ok"]
+
+
+def test_picking_a_fund_after_clarification_answers_the_original_definition_question():
+    history = ["อันนี้คือทุนอะไร (ข้อ 1.1), ทุนวิจัยสถาบัน"]
+    result = asyncio.run(pipeline.run("ทุนวิจัยสถาบัน", history=history))
+    assert result["slots"]["intent"] == "definition"
+    assert result["verify"]["ok"]
+    assert "ทุนส่งเสริมการวิจัย" in result["answer"]
+
+
 def test_a_question_naming_no_fund_is_not_a_dangling_reference():
     # nothing to resolve is different from a reference that failed to resolve
     assert pipeline.analyze("สวัสดี")["unresolved_reference"] is False

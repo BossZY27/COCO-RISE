@@ -59,7 +59,9 @@ ELIGIBILITY_WORDS = ("มีสิทธิ", "สิทธิ์", "คุณ�
 CEILING_WORDS = ("เพดาน", "หลักเกณฑ์กลาง")
 AMOUNT_WORDS = ("เท่าไร", "เท่าไหร่", "กี่บาท", "กี่ทุน", "วงเงิน", "จำนวนเงิน", "ทุนละ", "ได้เงิน",
                 "ได้ค่าตอบแทน")
-DEFINITION_WORDS = ("คืออะไร", "คืออะไรบ้าง", "คือใคร", "หมายความว่า", "หมายถึง", "นิยาม", "แปลว่า")
+DEFINITION_WORDS = ("คืออะไร", "คืออะไรบ้าง", "คือทุนอะไร", "คือใคร", "หมายความว่า", "หมายถึง", "นิยาม", "แปลว่า")
+FUND_CATEGORY_WORDS = ("อยู่หมวดไหน", "อยู่หมวดอะไร", "อยู่ในหมวดไหน", "อยู่ในหมวดอะไร",
+                       "เป็นทุนประเภทไหน", "เป็นทุนประเภทอะไร", "จัดอยู่ในหมวด")
 # Answers whose wording code assembles from several rows. A rephrasing that dropped a fund or a figure
 # would still read as complete, so they never go to the model.
 TEMPLATE_ONLY_INTENTS = ("compare", "rank", "tiers", "details", "catalogue_details", "hypothetical", "definition",
@@ -86,7 +88,9 @@ LIST_WORDS = ("มีทุนอะไร", "ทุนอะไรบ้าง"
 RECOMMENDATION_WORDS = ("แนะนำ", "ช่วยเลือก", "ช่วยคัด", "เหมาะกับ", "เข้ากับ", "ควรขอ", "ควรสมัคร")
 CURRENT_OPEN_WORDS = ("เปิดตอนนี้", "เปิดอยู่", "กำลังเปิด", "เปิดรับตอนนี้", "เปิดรับอยู่")
 # "ทุนนี้" points back at the previous turn, so the current question names no fund of its own
-ANAPHORA = ("ทุนนี้", "ทุนวิจัยนี้", "ทุนดังกล่าว", "ทุนนั้น", "ทุนตัวนี้")
+ANAPHORA = ("ทุนนี้", "ทุนวิจัยนี้", "ทุนดังกล่าว", "ทุนนั้น", "ทุนตัวนี้",
+           "มันคือทุน", "มันคืออะไร", "อันนี้คือทุน", "อันนี้คืออะไร")
+CLAUSE_REFERENCE_RE = re.compile(r"ข้อ\s*([12]\.\d{1,2})(?![\d.])")
 
 
 def _wants_catalogue_details(question: str, catalogue_context: bool, mentioned: list[dict]) -> bool:
@@ -167,6 +171,32 @@ def _relation_funds(question: str, mentioned: list[dict]) -> list[str]:
     return [*premises, target]
 
 
+def _conflicting_clause(question: str, mentioned: list[dict]) -> dict | None:
+    """Catch one explicit annex clause paired with a different, unambiguous fund name."""
+    if "ประกาศ" in question and not any(word in question for word in ("หลักเกณฑ์กลาง", "บัญชีแนบท้าย")):
+        return None
+    clauses = CLAUSE_REFERENCE_RE.findall(question)
+    if len(clauses) != 1 or len(mentioned) != 1 or mentioned[0]["alternatives"]:
+        return None
+    catalogue = store.fund_catalogue()
+    by_clause = next((row for row in catalogue if row["clause"] == clauses[0]), None)
+    by_name = next((row for row in catalogue if row["fund"] == mentioned[0]["fund"]), None)
+    if not by_clause or not by_name or by_clause["fund"] == by_name["fund"]:
+        return None
+    return {"clause_row": by_clause, "name_row": by_name}
+
+
+def _explicit_annex_fund(question: str, mentioned: list[dict]) -> str | None:
+    """Resolve a clause only when the question names the reviewed central annex."""
+    if mentioned or not any(word in question for word in ("หลักเกณฑ์กลาง", "บัญชีแนบท้าย")):
+        return None
+    clauses = CLAUSE_REFERENCE_RE.findall(question)
+    if len(clauses) != 1:
+        return None
+    matches = [row for row in store.fund_catalogue() if row["clause"] == clauses[0]]
+    return matches[0]["fund"] if len(matches) == 1 else None
+
+
 def analyze(question: str, history: list[str] | None = None, profile: dict | None = None) -> dict:
     """Fill the slots the rest of the pipeline needs.
 
@@ -181,6 +211,7 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
     # and never from a fuzzy guess. Remember that it was asked, because a question pointing back at
     # nothing needs a different answer from a question that simply named no fund.
     mentioned = understand.mentions(question)
+    clause_conflict = _conflicting_clause(question, mentioned)
     catalogue_context = any(
         any(word in earlier for word in LIST_WORDS) or GENERIC_CATALOGUE_RE.search(earlier)
         for earlier in history
@@ -251,6 +282,9 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         fund, confidence, alternatives = None, 0.0, []
     else:
         fund, confidence, alternatives = _find_fund(question)
+        annex_fund = _explicit_annex_fund(question, mentioned)
+        if annex_fund:
+            fund, confidence, alternatives = annex_fund, 1.0, []
         if prerequisite and named:
             fund = named[0]["fund"]
             confidence = 1.0 if named[0]["exact"] else 0.95
@@ -261,9 +295,20 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
             break
         if not constrained_followup:
             break
+        if CLAUSE_REFERENCE_RE.search(question):
+            # A new clause is a new subject; never borrow the previous clause's fund.
+            break
         if fund is not None:
             break
+        earlier_conflict = _conflicting_clause(earlier, understand.mentions(earlier))
+        if earlier_conflict:
+            # Until the user picks one side, neither name may become the next answer's subject.
+            clause_conflict = earlier_conflict
+            break
         fund, confidence, alternatives = _find_fund(earlier)
+        annex_fund = _explicit_annex_fund(earlier, understand.mentions(earlier))
+        if annex_fund:
+            fund, confidence, alternatives = annex_fund, 1.0, []
     chatter = None if from_current else understand.small_talk(question)
     topic = "" if from_current else understand.topic_of(question)
     if chatter or topic:        # "ขอบคุณครับ" after a grant question is not another question about it
@@ -271,7 +316,9 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
     tier = _find_tier(question) or (_find_tier(previous) if previous else None)
     fiscal_year, assumed = _fiscal_year(question, previous)
     ranking = understand.wants_ranking(question) if fund is None else None
-    if chatter:
+    if clause_conflict:
+        intent = "clarify_reference"
+    elif chatter:
         intent = "smalltalk"
     elif topic and not recommendation_request:
         intent = "topic"
@@ -299,11 +346,13 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         intent = "list"
     elif fund and understand.wants_details(question):
         intent = "details"
+    elif fund and ("คือทุนอะไร" in question or any(w in question for w in FUND_CATEGORY_WORDS)):
+        intent = "definition"
     elif any(w in question for w in CEILING_WORDS):
         intent = "ceiling"
     elif any(w in question for w in AMOUNT_WORDS):
         intent = "amount"
-    elif any(w in question for w in DEFINITION_WORDS):
+    elif any(w in question for w in DEFINITION_WORDS + FUND_CATEGORY_WORDS):
         intent = "definition"
     elif prerequisite or any(w in question for w in ELIGIBILITY_WORDS) or understand.asks_if_possible(question):
         intent = "eligibility"
@@ -311,14 +360,23 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         intent = "match"
     else:
         intent = "unknown"
+    if intent == "unknown" and fund and question == fund and previous:
+        prior_conflict = _conflicting_clause(previous, understand.mentions(previous))
+        if (prior_conflict
+                and fund in (prior_conflict["clause_row"]["fund"], prior_conflict["name_row"]["fund"])):
+            if any(word in previous for word in DEFINITION_WORDS):
+                intent = "definition"
+            elif understand.wants_details(previous):
+                intent = "details"
     if intent == "unknown" and previous and constrained_followup:
         previous_intent = analyze(previous, history[:-1], profile)["intent"]
-        if previous_intent in ("amount", "ceiling", "tiers", "details", "eligibility", "application"):
+        if previous_intent in ("amount", "ceiling", "tiers", "details", "definition", "eligibility", "application"):
             intent = previous_intent
     rewritten = question if from_current else " ".join(x for x in (fund, tier, question) if x)
     slots = {"standalone_question": rewritten.strip(), "fund": fund, "tier": tier, "fiscal_year": fiscal_year,
              "year_assumed": assumed, "intent": intent, "confidence": round(confidence, 2), "method": "rules",
              "unresolved_reference": points_back and fund is None, "alternatives": alternatives,
+             "clause_conflict": clause_conflict,
              "funds": relation_funds if hypothetical else [m["fund"] for m in named],
              "ranking": ranking, "topic": topic, "chatter": chatter,
              "about_asker": understand.about_the_asker(question) and not prerequisite,
@@ -358,7 +416,7 @@ def semantic_backend() -> str:
 async def retrieve(slots: dict) -> dict:
     query = slots["standalone_question"]
     year = slots["fiscal_year"]
-    if slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation"):
+    if slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation", "clarify_reference"):
         # The catalogue answer and citations are built directly from the verified
         # structured rows. Searching passages or embedding the query cannot change it.
         return {"chunks": [], "facts": [], "semantic_by": "not_needed",

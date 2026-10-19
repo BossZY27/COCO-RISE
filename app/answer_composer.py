@@ -93,6 +93,13 @@ def _pending_notice(slots: dict) -> tuple[str, list[str], list[dict]]:
 def compose_answer(slots: dict, evidence: dict, ruling: dict,
                    profile: dict | None = None) -> tuple[str, list[str], list[dict]]:
     facts = evidence["facts"]
+    if slots["intent"] == "clarify_reference":
+        conflict = slots["clause_conflict"]
+        by_clause, by_name = conflict["clause_row"], conflict["name_row"]
+        return (f"ตามบัญชีแนบท้าย ข้อ {by_clause['clause']} คือ{by_clause['fund']} "
+                f"ส่วน{by_name['fund']}อยู่ข้อ {by_name['clause']} "
+                "ชื่อทุนกับเลขข้อที่ระบุจึงไม่ตรงกัน คุณต้องการถามทุนใด?",
+                _cites([by_clause, by_name]), [])
     built = _built_answer(slots, ruling)
     if built:
         return built
@@ -157,7 +164,7 @@ def compose_answer(slots: dict, evidence: dict, ruling: dict,
             return (f"ตามนิยามในประกาศ {term['term']} หมายความว่า {term['text']}"), [_cite(term["chunk"])], []
     if slots["fund"] is None:
         if slots.get("unresolved_reference"):
-            return ("คำถามนี้ใช้คำว่า ทุนนี้ ซึ่งหมายถึงทุนที่คุยกันไว้ก่อนหน้า แต่ยังไม่มีคำถามก่อนหน้าในบทสนทนานี้ "
+            return ("คำถามนี้อ้างถึงทุนก่อนหน้า แต่ในบทสนทนานี้ยังไม่มีชื่อทุนตัวเดียวที่ยืนยันได้ "
                     "ระบบจึงยังไม่รู้ว่าหมายถึงทุนใด ลองถามว่า มีทุนอะไรบ้าง เพื่อดูรายการทั้งหมด "
                     "หรือพิมพ์ชื่อทุนที่ต้องการทราบมาตรง ๆ"), [], []
         return ("ระบบยังไม่แน่ใจว่าคำถามนี้หมายถึงทุนใด ถามว่า มีทุนอะไรบ้าง เพื่อดูรายการทั้งหมด "
