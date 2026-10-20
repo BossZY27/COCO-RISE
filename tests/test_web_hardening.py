@@ -10,7 +10,11 @@ import subprocess
 import pytest
 from fastapi.testclient import TestClient
 
-from app import audit, limits, main, pipeline, review
+from app.core import security as limits
+from app.infrastructure.json import audit
+from app.modules.documents import review
+from app.modules.legacy import api as main
+from app.modules.query import engine as pipeline
 from app.main import app
 
 
@@ -48,11 +52,11 @@ def _exercise_launcher_environment_lifecycle(
     (tmp_path / ".env").write_text(
         "\n".join(
             [
-                "IRFA_LIFECYCLE_IMPORTED=dotenv-only",
-                "IRFA_LIFECYCLE_EXISTING=dotenv-must-lose",
-                "IRFA_ADMIN_ENABLED=dotenv-admin",
-                "IRFA_PROFILE_SOURCE=dotenv-profile",
-                "IRFA_EMBED_MODEL=alternate-embed:model",
+                "RISE_LIFECYCLE_IMPORTED=dotenv-only",
+                "RISE_LIFECYCLE_EXISTING=dotenv-must-lose",
+                "RISE_ADMIN_ENABLED=dotenv-admin",
+                "RISE_PROFILE_SOURCE=dotenv-profile",
+                "RISE_EMBED_MODEL=alternate-embed:model",
             ]
         ),
         encoding="utf-8",
@@ -66,21 +70,21 @@ $ErrorActionPreference = "Stop"
 $launcher = '{launcher_path}'
 $global:launcherShouldFail = {should_fail}
 $global:launcherObserved = @{{}}
-$env:IRFA_LIFECYCLE_IMPORTED = $null
-$env:IRFA_LIFECYCLE_EXISTING = "process-value"
-$env:IRFA_ADMIN_ENABLED = $null
-$env:IRFA_PROFILE_SOURCE = "process-profile"
-$env:IRFA_EMBED_MODEL = $null
+$env:RISE_LIFECYCLE_IMPORTED = $null
+$env:RISE_LIFECYCLE_EXISTING = "process-value"
+$env:RISE_ADMIN_ENABLED = $null
+$env:RISE_PROFILE_SOURCE = "process-profile"
+$env:RISE_EMBED_MODEL = $null
 
 function global:Invoke-WebRequest {{ throw "offline for launcher lifecycle test" }}
 function global:ollama {{}}
 function global:python {{
     $global:launcherObserved = @{{
-        imported = $env:IRFA_LIFECYCLE_IMPORTED
-        existing = $env:IRFA_LIFECYCLE_EXISTING
-        admin = $env:IRFA_ADMIN_ENABLED
-        profile = $env:IRFA_PROFILE_SOURCE
-        embed = $env:IRFA_EMBED_MODEL
+        imported = $env:RISE_LIFECYCLE_IMPORTED
+        existing = $env:RISE_LIFECYCLE_EXISTING
+        admin = $env:RISE_ADMIN_ENABLED
+        profile = $env:RISE_PROFILE_SOURCE
+        embed = $env:RISE_EMBED_MODEL
     }}
     $global:LASTEXITCODE = 0
     if ($global:launcherShouldFail) {{ throw "forced check failure" }}
@@ -125,11 +129,11 @@ $result = @{{
     caught = $caught
     observed = $global:launcherObserved
     after = @{{
-        imported = $env:IRFA_LIFECYCLE_IMPORTED
-        existing = $env:IRFA_LIFECYCLE_EXISTING
-        admin = $env:IRFA_ADMIN_ENABLED
-        profile = $env:IRFA_PROFILE_SOURCE
-        embed = $env:IRFA_EMBED_MODEL
+        imported = $env:RISE_LIFECYCLE_IMPORTED
+        existing = $env:RISE_LIFECYCLE_EXISTING
+        admin = $env:RISE_ADMIN_ENABLED
+        profile = $env:RISE_PROFILE_SOURCE
+        embed = $env:RISE_EMBED_MODEL
     }}
 }}
 Write-Output ('__RESULT__' + ($result | ConvertTo-Json -Compress -Depth 4))
@@ -148,8 +152,8 @@ def test_demo_uses_coco_rise_name_without_changing_chat_storage(client: TestClie
     assert response.status_code == 200
     assert "<title>COCO-RISE demo" in response.text
     assert '<div class="brand">COCO-RISE <span>demo</span></div>' in response.text
-    assert "irfa-demo-chats-v1" in response.text
-    assert app.title == "COCO-RISE demo"
+    assert "rise-demo-chats-v1" in response.text
+    assert app.title == "RISE API"
 
 
 def test_public_responses_set_browser_security_headers(client: TestClient):
@@ -221,7 +225,7 @@ def test_untrusted_host_is_rejected(client: TestClient):
 def test_trusted_host_configuration_rejects_wildcard_subdomains(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.setenv("IRFA_TRUSTED_HOSTS", "127.0.0.1,*.example.com")
+    monkeypatch.setenv("RISE_TRUSTED_HOSTS", "127.0.0.1,*.example.com")
 
     with pytest.raises(RuntimeError, match="ห้ามใช้ \\*"):
         main._trusted_hosts()
@@ -333,14 +337,14 @@ def test_proxy_identity_header_is_ignored_outside_the_proxy_allowlist(
     monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setattr(main, "TRUST_PROXY_USER", True)
-    monkeypatch.setenv("IRFA_TRUSTED_PROXY_IPS", "127.0.0.1,::1")
+    monkeypatch.setenv("RISE_TRUSTED_PROXY_IPS", "127.0.0.1,::1")
 
     assert main._proxy_user_id("P2", "203.0.113.10") is None
     assert main._proxy_user_id("P2", "127.0.0.1") == "P2"
 
 
 def test_proxy_allowlist_rejects_non_ip_entries(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("IRFA_TRUSTED_PROXY_IPS", "127.0.0.1,proxy.example")
+    monkeypatch.setenv("RISE_TRUSTED_PROXY_IPS", "127.0.0.1,proxy.example")
 
     with pytest.raises(RuntimeError, match="IP"):
         main._trusted_proxy_ips()
@@ -383,10 +387,10 @@ def test_friend_demo_launcher_uses_explicit_safe_defaults():
     script = RUN_SCRIPT.read_text(encoding="utf-8")
 
     assert "$FriendDemoIp" in script
-    assert "IRFA_ADMIN_TOKEN" in script
-    assert "IRFA_EXPOSE_DOCS" in script
-    assert "IRFA_AUDIT" in script
-    assert "IRFA_TRUST_PROXY_USER" in script
+    assert "RISE_ADMIN_TOKEN" in script
+    assert "RISE_EXPOSE_DOCS" in script
+    assert "RISE_AUDIT" in script
+    assert "RISE_TRUST_PROXY_USER" in script
     assert "--workers 1" in script
     assert "--no-proxy-headers" in script
     assert "--host 0.0.0.0" not in script
@@ -411,7 +415,7 @@ def test_launcher_wraps_dotenv_and_friend_overrides_in_lifo_cleanup():
 def test_launcher_checks_the_embedding_model_configured_in_dotenv():
     script = RUN_SCRIPT.read_text(encoding="utf-8")
 
-    assert 'GetEnvironmentVariable("IRFA_EMBED_MODEL", "Process")' in script
+    assert 'GetEnvironmentVariable("RISE_EMBED_MODEL", "Process")' in script
     assert 'foreach ($m in @("bge-m3"))' not in script
     assert "$embedModelForList -in $modelNames" in script
 
@@ -446,7 +450,7 @@ def test_launcher_keeps_optional_ollama_from_becoming_a_startup_requirement():
     script = RUN_SCRIPT.read_text(encoding="utf-8")
 
     assert "Get-Command ollama -ErrorAction SilentlyContinue" in script
-    assert "IRFA_LLM_BASE" in script
+    assert "RISE_LLM_BASE" in script
     assert "ระบบยังตอบได้" in script
     assert "template อย่างเดียว" not in script
 

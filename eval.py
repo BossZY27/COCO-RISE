@@ -8,7 +8,7 @@ import statistics
 import sys
 from pathlib import Path
 
-from app import pipeline
+from app.modules.query import engine as pipeline
 
 sys.stdout.reconfigure(encoding="utf-8")      # Windows pipes default to cp1252 and cannot print Thai
 

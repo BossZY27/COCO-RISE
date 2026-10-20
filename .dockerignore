@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+.vscode
+__pycache__
+.pytest_cache
+logs
+data/private
+data/ingestion
+data/embeddings.json
+*.bak
+*.tmp

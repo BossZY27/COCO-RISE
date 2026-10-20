@@ -14,7 +14,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import answers, llm, pipeline, store, understand  # noqa: E402
+from app.modules.knowledge import corpus as store  # noqa: E402
+from app.infrastructure.ollama import legacy as llm  # noqa: E402
+from app.modules.query import answers, engine as pipeline, understand  # noqa: E402
 
 ANNEX = "หลักเกณฑ์กลาง"
 

@@ -1,0 +1,4119 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "RISE v2 API contract",
+    "description": "Read-only contract generated from the implemented /v2 routes.",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/v2/documents": {
+      "post": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Upload",
+        "operationId": "upload_v2_documents_post",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Title",
+              "type": "string",
+              "maxLength": 250,
+              "nullable": true
+            }
+          },
+          {
+            "name": "fiscal_year_be",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "title": "Fiscal Year Be",
+              "type": "integer",
+              "maximum": 3000,
+              "minimum": 2400,
+              "nullable": true
+            }
+          },
+          {
+            "name": "x-pdf-name",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 500,
+              "default": "document.pdf",
+              "title": "X-Pdf-Name"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Documents",
+        "operationId": "documents_v2_documents_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentResponse"
+                  },
+                  "title": "Response Documents V2 Documents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/documents/{document_id}": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Document",
+        "operationId": "document_v2_documents__document_id__get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/documents/{document_id}/versions": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Versions",
+        "operationId": "versions_v2_documents__document_id__versions_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VersionResponse"
+                  },
+                  "title": "Response Versions V2 Documents  Document Id  Versions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Upload Version",
+        "operationId": "upload_version_v2_documents__document_id__versions_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "x-pdf-name",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 500,
+              "default": "document.pdf",
+              "title": "X-Pdf-Name"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Version",
+        "operationId": "version_v2_versions__version_id__get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/pages": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Pages",
+        "operationId": "pages_v2_versions__version_id__pages_get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PageResponse"
+                  },
+                  "title": "Response Pages V2 Versions  Version Id  Pages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/chunks": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Chunks",
+        "operationId": "chunks_v2_versions__version_id__chunks_get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChunkResponse"
+                  },
+                  "title": "Response Chunks V2 Versions  Version Id  Chunks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/pages/{page}": {
+      "patch": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Edit",
+        "operationId": "edit_v2_versions__version_id__pages__page__patch",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Page"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageEdit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/review": {
+      "post": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Review",
+        "operationId": "review_v2_versions__version_id__review_post",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/publish": {
+      "post": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Publish",
+        "operationId": "publish_v2_versions__version_id__publish_post",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Actor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/withdraw": {
+      "post": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Withdraw",
+        "operationId": "withdraw_v2_versions__version_id__withdraw_post",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Actor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/versions/{version_id}/source": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Private Source",
+        "operationId": "private_source_v2_versions__version_id__source_get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/sources/{version_id}/pages/{page}": {
+      "get": {
+        "tags": [
+          "Documents v2"
+        ],
+        "summary": "Source",
+        "operationId": "source_v2_sources__version_id__pages__page__get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "description": "RISE API."
+      }
+    },
+    "/v2/jobs": {
+      "get": {
+        "tags": [
+          "Jobs v2"
+        ],
+        "summary": "Jobs",
+        "operationId": "jobs_v2_jobs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  },
+                  "title": "Response Jobs V2 Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Jobs v2"
+        ],
+        "summary": "Job",
+        "operationId": "job_v2_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/jobs/{job_id}/retry": {
+      "post": {
+        "tags": [
+          "Jobs v2"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_v2_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/query": {
+      "post": {
+        "tags": [
+          "Query v2"
+        ],
+        "summary": "Query",
+        "operationId": "query_v2_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "description": "RISE API."
+      }
+    },
+    "/v2/facts": {
+      "get": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Fact Listing",
+        "operationId": "fact_listing_v2_facts_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeResponse"
+                  },
+                  "title": "Response Fact Listing V2 Facts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Fact Create",
+        "operationId": "fact_create_v2_facts_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/facts/{item_id}": {
+      "get": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Fact Get",
+        "operationId": "fact_get_v2_facts__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Fact Edit",
+        "operationId": "fact_edit_v2_facts__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/facts/{item_id}/review": {
+      "post": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Fact Decide",
+        "operationId": "fact_decide_v2_facts__item_id__review_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/rules": {
+      "get": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Rule Listing",
+        "operationId": "rule_listing_v2_rules_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeResponse"
+                  },
+                  "title": "Response Rule Listing V2 Rules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Rule Create",
+        "operationId": "rule_create_v2_rules_post",
+        "parameters": [
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/rules/{item_id}": {
+      "get": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Rule Get",
+        "operationId": "rule_get_v2_rules__item_id__get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/ResourceNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Rule Edit",
+        "operationId": "rule_edit_v2_rules__item_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/rules/{item_id}/review": {
+      "post": {
+        "tags": [
+          "Knowledge v2"
+        ],
+        "summary": "Rule Decide",
+        "operationId": "rule_decide_v2_rules__item_id__review_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Token",
+              "type": "string",
+              "nullable": true
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "401": {
+            "$ref": "#/components/responses/AdminUnauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        },
+        "description": "RISE API.",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ]
+      }
+    },
+    "/v2/feedback": {
+      "post": {
+        "tags": [
+          "Feedback v2"
+        ],
+        "summary": "Feedback",
+        "operationId": "feedback_v2_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "description": "RISE API."
+      }
+    },
+    "/v2/status": {
+      "get": {
+        "tags": [
+          "System v2"
+        ],
+        "summary": "Status",
+        "operationId": "status_v2_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "description": "RISE API."
+      }
+    },
+    "/v2/ready": {
+      "get": {
+        "tags": [
+          "System v2"
+        ],
+        "summary": "Ready",
+        "operationId": "ready_v2_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        },
+        "description": "RISE API."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Actor": {
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reviewer"
+        ],
+        "title": "Actor"
+      },
+      "ChunkResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string",
+            "nullable": true
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "chunk_set_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chunk Set Id"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "legacy_id",
+          "version_id",
+          "chunk_set_id",
+          "page",
+          "text",
+          "verified",
+          "payload"
+        ],
+        "title": "ChunkResponse"
+      },
+      "Citation": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "clause": {
+            "type": "string",
+            "title": "Clause",
+            "default": ""
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "version_id",
+          "page",
+          "chunk_id",
+          "label",
+          "url"
+        ],
+        "title": "Citation"
+      },
+      "Condition": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "pattern": "^(staff_type|department|grants_this_year(?:\\..+)?)$",
+            "title": "Field"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "in",
+              "eq",
+              "lt",
+              "not_received"
+            ],
+            "title": "Op"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "fail_reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Fail Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "op",
+          "value",
+          "fail_reason"
+        ],
+        "title": "Condition"
+      },
+      "Decision": {
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reviewer",
+          "decision"
+        ],
+        "title": "Decision"
+      },
+      "DocumentDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "fiscal_year_be": {
+            "title": "Fiscal Year Be",
+            "type": "integer",
+            "nullable": true
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionResponse"
+            },
+            "type": "array",
+            "title": "Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "legacy_id",
+          "title",
+          "fiscal_year_be",
+          "versions"
+        ],
+        "title": "DocumentDetail"
+      },
+      "DocumentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "fiscal_year_be": {
+            "title": "Fiscal Year Be",
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "legacy_id",
+          "title",
+          "fiscal_year_be"
+        ],
+        "title": "DocumentResponse"
+      },
+      "EvidenceInput": {
+        "properties": {
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Quote"
+          },
+          "clause": {
+            "type": "string",
+            "maxLength": 160,
+            "title": "Clause",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version_id",
+          "page",
+          "quote"
+        ],
+        "title": "EvidenceInput"
+      },
+      "EvidenceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote"
+          },
+          "clause": {
+            "type": "string",
+            "title": "Clause"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version_id",
+          "page",
+          "chunk_id",
+          "quote",
+          "clause"
+        ],
+        "title": "EvidenceResponse"
+      },
+      "Feedback": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Question",
+            "description": "คำถามที่ต้องการให้ความเห็น"
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Answer",
+            "description": "คำตอบที่แสดงในเดโม"
+          },
+          "helpful": {
+            "type": "boolean",
+            "title": "Helpful",
+            "description": "true เมื่อคำตอบมีประโยชน์"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 400,
+            "title": "Note",
+            "description": "หมายเหตุเพิ่มเติม; เก็บเมื่อเปิด audit",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "answer",
+          "helpful"
+        ],
+        "title": "Feedback",
+        "description": "A small user report suitable for the append-only audit log."
+      },
+      "FeedbackInput": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "helpful": {
+            "type": "boolean",
+            "title": "Helpful"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "helpful"
+        ],
+        "title": "FeedbackInput"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IngestionAcceptedResponse": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "extracting",
+              "chunking",
+              "awaiting_review",
+              "needs_ocr",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "job_id",
+          "status",
+          "duplicate"
+        ],
+        "title": "IngestionAcceptedResponse"
+      },
+      "IngestionChunkListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IngestionChunkResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count",
+          "limit",
+          "offset"
+        ],
+        "title": "IngestionChunkListResponse"
+      },
+      "IngestionChunkPatch": {
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 1,
+            "nullable": true
+          },
+          "clause": {
+            "title": "Clause",
+            "type": "string",
+            "maxLength": 120,
+            "nullable": true
+          },
+          "section_type": {
+            "title": "Section Type",
+            "type": "string",
+            "enum": [
+              "title",
+              "preamble",
+              "definition",
+              "fund_list",
+              "amount_table",
+              "eligibility",
+              "application",
+              "timeline",
+              "contact",
+              "other"
+            ],
+            "nullable": true
+          },
+          "section_label": {
+            "title": "Section Label",
+            "type": "string",
+            "maxLength": 160,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reviewer"
+        ],
+        "title": "IngestionChunkPatch",
+        "description": "A human correction to a quarantined chunk, never an approval action."
+      },
+      "IngestionChunkResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "doc": {
+            "type": "string",
+            "title": "Doc"
+          },
+          "fiscal_year": {
+            "title": "Fiscal Year",
+            "type": "integer",
+            "nullable": true
+          },
+          "source_filename": {
+            "type": "string",
+            "title": "Source Filename"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "extraction_method": {
+            "type": "string",
+            "title": "Extraction Method"
+          },
+          "order_in_page": {
+            "type": "integer",
+            "title": "Order In Page"
+          },
+          "global_order": {
+            "type": "integer",
+            "title": "Global Order"
+          },
+          "clause": {
+            "type": "string",
+            "title": "Clause"
+          },
+          "parent_clause": {
+            "title": "Parent Clause",
+            "type": "string",
+            "nullable": true
+          },
+          "part_index": {
+            "type": "integer",
+            "title": "Part Index"
+          },
+          "section_type": {
+            "type": "string",
+            "enum": [
+              "title",
+              "preamble",
+              "definition",
+              "fund_list",
+              "amount_table",
+              "eligibility",
+              "application",
+              "timeline",
+              "contact",
+              "other"
+            ],
+            "title": "Section Type"
+          },
+          "section_label": {
+            "type": "string",
+            "title": "Section Label"
+          },
+          "amount_candidates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Amount Candidates"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "title": "Status"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "published": {
+            "type": "boolean",
+            "title": "Published"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "last_edited_by": {
+            "title": "Last Edited By",
+            "type": "string",
+            "nullable": true
+          },
+          "last_edited_at": {
+            "title": "Last Edited At",
+            "type": "string",
+            "nullable": true
+          },
+          "edit_history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Edit History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "document_id",
+          "doc",
+          "source_filename",
+          "text",
+          "page",
+          "extraction_method",
+          "order_in_page",
+          "global_order",
+          "clause",
+          "part_index",
+          "section_type",
+          "section_label",
+          "status",
+          "verified",
+          "published",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "IngestionChunkResponse"
+      },
+      "IngestionDocumentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IngestionDocumentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "count",
+          "limit",
+          "offset"
+        ],
+        "title": "IngestionDocumentListResponse"
+      },
+      "IngestionDocumentResponse": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "content_sha256": {
+            "type": "string",
+            "title": "Content Sha256"
+          },
+          "content_bytes": {
+            "type": "integer",
+            "title": "Content Bytes"
+          },
+          "pages_total": {
+            "type": "integer",
+            "title": "Pages Total"
+          },
+          "pages_processed": {
+            "type": "integer",
+            "title": "Pages Processed",
+            "default": 0
+          },
+          "chunk_count": {
+            "type": "integer",
+            "title": "Chunk Count",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "extracting",
+              "chunking",
+              "awaiting_review",
+              "needs_ocr",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "published": {
+            "type": "boolean",
+            "title": "Published"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "processed_at": {
+            "title": "Processed At",
+            "type": "string",
+            "nullable": true
+          },
+          "reconciled_at": {
+            "title": "Reconciled At",
+            "type": "string",
+            "nullable": true
+          },
+          "last_edited_by": {
+            "title": "Last Edited By",
+            "type": "string",
+            "nullable": true
+          },
+          "last_edited_at": {
+            "title": "Last Edited At",
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "title": "Error",
+            "type": "string",
+            "nullable": true
+          },
+          "needs_ocr_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Needs Ocr Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "job_id",
+          "filename",
+          "content_sha256",
+          "content_bytes",
+          "pages_total",
+          "status",
+          "verified",
+          "published",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "IngestionDocumentResponse"
+      },
+      "IngestionJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "extracting",
+              "chunking",
+              "awaiting_review",
+              "needs_ocr",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 0
+          },
+          "pages_total": {
+            "type": "integer",
+            "title": "Pages Total",
+            "default": 0
+          },
+          "pages_processed": {
+            "type": "integer",
+            "title": "Pages Processed",
+            "default": 0
+          },
+          "chunk_count": {
+            "type": "integer",
+            "title": "Chunk Count",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string",
+            "nullable": true
+          },
+          "processed_at": {
+            "title": "Processed At",
+            "type": "string",
+            "nullable": true
+          },
+          "retry_requested_at": {
+            "title": "Retry Requested At",
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "title": "Error",
+            "type": "string",
+            "nullable": true
+          },
+          "needs_ocr_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Needs Ocr Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "document_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "IngestionJobResponse"
+      },
+      "JobResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string",
+            "nullable": true
+          },
+          "version_id": {
+            "title": "Version Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ingest",
+              "index"
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_review",
+              "needs_ocr",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "lease_until": {
+            "title": "Lease Until",
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "heartbeat_at": {
+            "title": "Heartbeat At",
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "error": {
+            "title": "Error",
+            "type": "string",
+            "nullable": true
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "legacy_id",
+          "version_id",
+          "kind",
+          "status",
+          "attempts",
+          "owner",
+          "lease_until",
+          "heartbeat_at",
+          "error",
+          "payload"
+        ],
+        "title": "JobResponse"
+      },
+      "KnowledgeInput": {
+        "properties": {
+          "fund": {
+            "type": "string",
+            "maxLength": 250,
+            "minLength": 1,
+            "title": "Fund"
+          },
+          "fiscal_year_be": {
+            "title": "Fiscal Year Be",
+            "type": "integer",
+            "maximum": 3000.0,
+            "minimum": 2400.0,
+            "nullable": true
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "amount_type": {
+            "title": "Amount Type",
+            "type": "string",
+            "enum": [
+              "ceiling",
+              "allocated"
+            ],
+            "nullable": true
+          },
+          "amount": {
+            "title": "Amount",
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "total_cap": {
+            "title": "Total Cap",
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "max_grants_per_person": {
+            "title": "Max Grants Per Person",
+            "type": "integer",
+            "minimum": 1.0,
+            "nullable": true
+          },
+          "max_grants_per_year": {
+            "title": "Max Grants Per Year",
+            "type": "integer",
+            "minimum": 1.0,
+            "nullable": true
+          },
+          "note": {
+            "title": "Note",
+            "type": "string",
+            "maxLength": 4000,
+            "nullable": true
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Conditions"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceInput"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fund",
+          "evidence"
+        ],
+        "title": "KnowledgeInput"
+      },
+      "KnowledgeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "legacy_id": {
+            "title": "Legacy Id",
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "rule"
+            ],
+            "title": "Kind"
+          },
+          "fund": {
+            "type": "string",
+            "title": "Fund"
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Program Id"
+          },
+          "call_id": {
+            "title": "Call Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "tier_id": {
+            "title": "Tier Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "fiscal_year_be": {
+            "title": "Fiscal Year Be",
+            "type": "integer",
+            "nullable": true
+          },
+          "amount_type": {
+            "title": "Amount Type",
+            "type": "string",
+            "enum": [
+              "ceiling",
+              "allocated"
+            ],
+            "nullable": true
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "approved",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "legacy_document_gate": {
+            "type": "boolean",
+            "title": "Legacy Document Gate"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "reviewed_by": {
+            "title": "Reviewed By",
+            "type": "string",
+            "nullable": true
+          },
+          "reviewed_at": {
+            "title": "Reviewed At",
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceResponse"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "legacy_id",
+          "kind",
+          "fund",
+          "program_id",
+          "call_id",
+          "tier_id",
+          "fiscal_year_be",
+          "amount_type",
+          "amount",
+          "status",
+          "legacy_document_gate",
+          "payload",
+          "reviewed_by",
+          "reviewed_at",
+          "evidence"
+        ],
+        "title": "KnowledgeResponse"
+      },
+      "PageEdit": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "reviewer"
+        ],
+        "title": "PageEdit"
+      },
+      "PageResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "error": {
+            "title": "Error",
+            "type": "string",
+            "nullable": true
+          },
+          "reviewed_by": {
+            "title": "Reviewed By",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "version_id",
+          "number",
+          "text",
+          "method",
+          "error",
+          "reviewed_by"
+        ],
+        "title": "PageResponse"
+      },
+      "PublicationRequest": {
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Sha256"
+          },
+          "confirmed_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Confirmed Pages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reviewer",
+          "source_sha256",
+          "confirmed_pages"
+        ],
+        "title": "PublicationRequest",
+        "description": "An explicit, page-by-page attestation by the PDF reviewer."
+      },
+      "Query": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Question",
+            "description": "คำถามภาษาไทยเรื่องทุนวิจัย"
+          },
+          "persona_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Persona Id",
+            "description": "รหัส persona สมมติในเดโม",
+            "default": "P1"
+          },
+          "history": {
+            "items": {
+              "type": "string",
+              "maxLength": 400
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "History"
+          },
+          "model": {
+            "title": "Model",
+            "description": "คงไว้เพื่อ compatibility; safe mode จะปฏิเสธค่าที่ไม่ว่าง",
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "Query",
+        "description": "ถามข้อมูลทุนในเดโม ใช้ persona_id สำหรับข้อมูลผู้ใช้สมมติเท่านั้น"
+      },
+      "QueryInput": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "history": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "History"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "QueryInput"
+      },
+      "QueryResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "answered",
+              "clarification_required",
+              "insufficient_evidence",
+              "blocked"
+            ],
+            "title": "Status"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "answer_source": {
+            "type": "string",
+            "enum": [
+              "llm",
+              "template",
+              "blocked"
+            ],
+            "title": "Answer Source"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Timings Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "status",
+          "answer",
+          "answer_source",
+          "citations",
+          "verification",
+          "timings_ms"
+        ],
+        "title": "QueryResponse"
+      },
+      "Record": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "Record"
+      },
+      "ReviewDocument": {
+        "properties": {
+          "reviewer": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reviewer"
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Source Sha256"
+          },
+          "confirmed_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Confirmed Pages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reviewer",
+          "source_sha256",
+          "confirmed_pages"
+        ],
+        "title": "ReviewDocument"
+      },
+      "UploadResponse": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "version_id",
+          "job_id",
+          "duplicate",
+          "status"
+        ],
+        "title": "UploadResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verification": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          },
+          "candidate_problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Candidate Problems"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "problems"
+        ],
+        "title": "Verification"
+      },
+      "VersionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string",
+            "nullable": true
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "reviewed",
+              "published",
+              "withdrawn",
+              "superseded"
+            ],
+            "title": "Status"
+          },
+          "current": {
+            "type": "boolean",
+            "title": "Current"
+          },
+          "pages_total": {
+            "type": "integer",
+            "title": "Pages Total"
+          },
+          "reviewed_by": {
+            "title": "Reviewed By",
+            "type": "string",
+            "nullable": true
+          },
+          "reviewed_at": {
+            "title": "Reviewed At",
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "document_id",
+          "number",
+          "sha256",
+          "filename",
+          "status",
+          "current",
+          "pages_total",
+          "reviewed_by",
+          "reviewed_at",
+          "provenance"
+        ],
+        "title": "VersionResponse"
+      },
+      "DemoQueryResponse": {
+        "type": "object",
+        "description": "ผล query ของเดโมปัจจุบัน; answer_source เป็น template หรือ blocked",
+        "properties": {
+          "answer": {
+            "type": "string"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "slots": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "ruling": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "answer_source": {
+            "type": "string",
+            "enum": [
+              "template",
+              "blocked"
+            ]
+          },
+          "selected_model": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "verify": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              },
+              "problems": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "ok",
+              "problems"
+            ]
+          },
+          "timings_ms": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "answer",
+          "citations",
+          "slots",
+          "ruling",
+          "answer_source",
+          "selected_model",
+          "evidence",
+          "verify",
+          "timings_ms",
+          "profile"
+        ]
+      },
+      "DemoFeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "recorded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "recorded"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "AdminToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Admin-Token",
+        "description": "ใช้ token ที่ผู้ดูแลตั้งใน RISE_ADMIN_TOKEN"
+      }
+    },
+    "responses": {
+      "InvalidRequest": {
+        "description": "request ไม่ผ่าน validation หรือเงื่อนไข",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HTTPValidationError"
+            }
+          }
+        }
+      },
+      "AdminUnauthorized": {
+        "description": "ไม่มีหรือ token ผู้ดูแลไม่ถูกต้อง",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResourceNotFound": {
+        "description": "ไม่พบเอกสาร งาน หรือ chunk",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "สถานะปัจจุบันไม่อนุญาตให้ทำรายการ",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "ส่งคำขอถี่เกินกำหนด",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "detail": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "สถานะและข้อมูลประกอบของเดโม"
+    },
+    {
+      "name": "Query",
+      "description": "ถามข้อมูลทุนและส่งความเห็นต่อคำตอบ"
+    },
+    {
+      "name": "Admin review",
+      "description": "API ผู้ดูแล ต้องส่ง X-Admin-Token เมื่อเปิดใช้งาน"
+    },
+    {
+      "name": "Admin ingestion",
+      "description": "นำเข้า PDF เป็นฉบับร่างเพื่อให้คนตรวจและอนุมัติ"
+    }
+  ]
+}

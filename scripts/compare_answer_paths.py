@@ -10,8 +10,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import eval_quality  # noqa: E402
-from app import pipeline, store  # noqa: E402
-from app.retrieval_experiment import RetrievalComparison  # noqa: E402
+from app.modules.knowledge import corpus as store  # noqa: E402
+from app.modules.query import engine as pipeline  # noqa: E402
+from evaluation.retrieval import RetrievalComparison  # noqa: E402
 
 
 async def main() -> None:

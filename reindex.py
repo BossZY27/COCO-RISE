@@ -4,7 +4,8 @@ import time
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-from app import llm, store
+from app.modules.knowledge import corpus as store
+from app.infrastructure.ollama import legacy as llm
 
 t0 = time.perf_counter()
 print("ollama ตอบ:", llm.available())

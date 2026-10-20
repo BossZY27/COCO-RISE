@@ -1,4 +1,4 @@
-﻿# เปิดระบบ IRFA บนเครื่องนี้
+﻿# เปิดระบบ RISE บนเครื่องนี้
 #   .\run.ps1            เปิดเซิร์ฟเวอร์
 #   .\run.ps1 -Reindex   สร้างเวกเตอร์ใหม่ก่อนเปิด (ใช้เมื่อเพิ่งอนุมัติเอกสารใหม่)
 #   .\run.ps1 -Check     ตรวจความพร้อมอย่างเดียว ไม่เปิดเซิร์ฟเวอร์
@@ -68,7 +68,7 @@ function Import-DotEnv([string]$Path) {
 try {
 if (-not (Test-Path -LiteralPath ".env")) {
     Copy-Item -LiteralPath ".env.example" -Destination ".env"
-    Write-Host "  สร้าง .env จากตัวอย่างแล้ว เปิดไฟล์ไปตั้ง IRFA_ADMIN_TOKEN ก่อนใช้หน้า /admin" -ForegroundColor Yellow
+    Write-Host "  สร้าง .env จากตัวอย่างแล้ว เปิดไฟล์ไปตั้ง RISE_ADMIN_TOKEN ก่อนใช้หน้า /admin" -ForegroundColor Yellow
 }
 Import-DotEnv ".env"
 
@@ -96,19 +96,19 @@ if ($friendMode) {
     }
 
     $serverHost = $FriendDemoIp
-    Set-DemoEnvironment "IRFA_TRUSTED_HOSTS" "$FriendDemoIp,127.0.0.1,localhost"
-    Set-DemoEnvironment "IRFA_ADMIN_ENABLED" "off"
-    Set-DemoEnvironment "IRFA_ADMIN_TOKEN" ""
-    Set-DemoEnvironment "IRFA_EXPOSE_DOCS" "off"
-    Set-DemoEnvironment "IRFA_PROFILE_SOURCE" "demo"
-    Set-DemoEnvironment "IRFA_TRUST_PROXY_USER" "off"
-    Set-DemoEnvironment "IRFA_LLM_CONCURRENCY" "1"
-    Set-DemoEnvironment "IRFA_AUDIT" $(if ($FriendDemoAudit) { "on" } else { "off" })
+    Set-DemoEnvironment "RISE_TRUSTED_HOSTS" "$FriendDemoIp,127.0.0.1,localhost"
+    Set-DemoEnvironment "RISE_ADMIN_ENABLED" "off"
+    Set-DemoEnvironment "RISE_ADMIN_TOKEN" ""
+    Set-DemoEnvironment "RISE_EXPOSE_DOCS" "off"
+    Set-DemoEnvironment "RISE_PROFILE_SOURCE" "demo"
+    Set-DemoEnvironment "RISE_TRUST_PROXY_USER" "off"
+    Set-DemoEnvironment "RISE_LLM_CONCURRENCY" "1"
+    Set-DemoEnvironment "RISE_AUDIT" $(if ($FriendDemoAudit) { "on" } else { "off" })
 }
 
 Write-Host "== ตรวจความพร้อม ==" -ForegroundColor Cyan
 
-$base = [Environment]::GetEnvironmentVariable("IRFA_LLM_BASE", "Process")
+$base = [Environment]::GetEnvironmentVariable("RISE_LLM_BASE", "Process")
 if ([string]::IsNullOrWhiteSpace($base)) { $base = "http://127.0.0.1:11434" }
 $base = $base.TrimEnd("/")
 try {
@@ -120,7 +120,7 @@ try {
 }
 
 $ollamaCommand = Get-Command ollama -ErrorAction SilentlyContinue
-$embedModel = [Environment]::GetEnvironmentVariable("IRFA_EMBED_MODEL", "Process")
+$embedModel = [Environment]::GetEnvironmentVariable("RISE_EMBED_MODEL", "Process")
 if ([string]::IsNullOrWhiteSpace($embedModel)) { $embedModel = "bge-m3:latest" }
 $embedModelForList = if ($embedModel.Contains(":")) { $embedModel } else { "${embedModel}:latest" }
 $modelNames = @()

@@ -4,6 +4,8 @@ agent-config.local.yaml
 /AGENTS.md
 /CLAUDE.md
 /agents/codex.md
+.vscode
+
 
 # demo runtime
 .env
@@ -20,3 +22,6 @@ data/embeddings.json
 data/ingestion/
 todo/*
 !todo/README.md
+data/private/
+.venv/
+funds-data/

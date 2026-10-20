@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import store  # noqa: E402
-from app.retrieval_experiment import RetrievalComparison  # noqa: E402
+from app.modules.knowledge import corpus as store  # noqa: E402
+from evaluation.retrieval import RetrievalComparison  # noqa: E402
 
 
 def systematic_cases(index: RetrievalComparison) -> list[dict]:

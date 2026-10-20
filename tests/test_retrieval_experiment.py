@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from app import store
-from app.retrieval_experiment import RetrievalComparison
+from app.modules.knowledge import corpus as store
+from evaluation.retrieval import RetrievalComparison
 
 
 def _chunk(chunk_id, doc, page, text, verified=True, clause="ทั้งหน้า", fiscal_year=None):
