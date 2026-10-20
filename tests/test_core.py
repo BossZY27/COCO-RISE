@@ -92,30 +92,6 @@ def test_asking_a_funds_conditions_is_not_mistaken_for_an_amount_question():
     assert pipeline.analyze("ทุนวิจัยสถาบันมีเงื่อนไขอะไรบ้าง")["intent"] == "details"
 
 
-def test_requesting_grant_conditions_lists_rules_without_personal_verdict_or_amount(monkeypatch):
-    question = "ขอเงื่อนไขในการรับทุนวิจัยสถาบัน"
-    reviewed_rule = {
-        "fund": "ทุนวิจัยสถาบัน", "fiscal_year": 2569,
-        "conditions": [
-            {"field": "staff_type", "op": "in", "value": ["พนักงานมหาวิทยาลัย"]},
-            {"field": "department", "op": "eq", "value": "วิทยาลัยการคอมพิวเตอร์"},
-            {"field": "grants_this_year.ทุนวิจัยสถาบัน", "op": "lt", "value": 1},
-        ],
-        "source": {"doc": "ประกาศ 42/2568", "clause": "ข้อ 3 และ ข้อ 4 (1.2)", "page": 3},
-    }
-    monkeypatch.setattr(store, "rules_for", lambda fund, year: [reviewed_rule])
-    slots = pipeline.analyze(question)
-    result = asyncio.run(pipeline.run(question, "P1"))
-
-    assert slots["intent"] == "details"
-    assert slots["criteria_request"] is True
-    assert "ประเภทบุคลากรต้องเป็นหนึ่งใน" in result["answer"]
-    assert "สังกัดต้องเป็นวิทยาลัยการคอมพิวเตอร์" in result["answer"]
-    assert "จำนวนครั้งที่ได้รับทุนวิจัยสถาบัน" in result["answer"]
-    assert "25,000" not in result["answer"]
-    assert "เข้าเกณฑ์" not in result["answer"]
-
-
 def test_asking_what_a_named_fund_is_gets_its_verified_category_not_a_money_answer():
     result = asyncio.run(pipeline.run("ทุนวิจัยสถาบันคืออะไร"))
     assert result["verify"]["ok"]

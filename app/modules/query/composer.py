@@ -1,7 +1,6 @@
 """Compose grounded answers from reviewed facts, rules and document chunks."""
 
 from app.modules.knowledge import corpus as store
-from app.modules.knowledge.rules import describe_rules
 from . import answers, understand
 from .patterns import BROAD_ELIGIBILITY_RE
 from app.modules.knowledge.formatting import baht as _baht, cite as _cite
@@ -59,11 +58,6 @@ def _built_answer(slots: dict, ruling: dict) -> tuple[str, list[str], list[dict]
         return answers.tiers_answer([fund, *slots.get("alternatives", [])])
     if intent == "details" and fund:
         usable = store.rules_for(fund, slots["fiscal_year"])
-        if slots.get("criteria_request") and usable:
-            described = describe_rules(usable)
-            if described:
-                text, citations = described
-                return text, citations, []
         return answers.details_answer(fund, _clause_eight(), not usable and store.rules_waiting(fund), bool(usable))
     if intent == "hypothetical" and len(slots.get("funds", [])) >= 2:
         if slots.get("mixed_premise"):

@@ -83,8 +83,7 @@ class QueryService:
             ruling = {"verdict": "no_rule", "reason": None, "source": None, "missing": ["staff_type", "department"]}
             t = time.perf_counter()
             template, labels, used = compose_answer(slots, evidence, ruling)
-            selected_rules = (store.rules_for(slots["fund"], slots["fiscal_year"])
-                              if slots["intent"] == "eligibility" or slots.get("criteria_request") else [])
+            selected_rules = store.rules_for(slots["fund"], slots["fiscal_year"]) if slots["intent"] == "eligibility" else []
             described = describe_rules(selected_rules)
             if described:
                 template, labels = described

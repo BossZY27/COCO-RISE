@@ -230,8 +230,6 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
                         ("เพดาน", "วงเงิน", "เท่าไร", "เท่าไหร่", "เงื่อนไข", "รายละเอียด")))
     )
     catalogue_details_request = _wants_catalogue_details(question, catalogue_context, mentioned)
-    criteria_request = any(phrase in question for phrase in
-                           ("ขอเงื่อนไข", "เงื่อนไขในการรับ", "เงื่อนไขการรับ"))
     # An explicit name in the same sentence resolves "ทุนนี้" immediately.  Only an
     # otherwise unnamed reference may fall back to an earlier conversation turn.
     points_back = not mentioned and any(a in question for a in ANAPHORA)
@@ -386,7 +384,6 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
              "ranking": ranking, "topic": topic, "chatter": chatter,
              "about_asker": understand.about_the_asker(question) and not prerequisite,
              "subject_role": understand.person_asked_about(question), "prerequisite": prerequisite,
-             "criteria_request": criteria_request,
              "premise_received": premise_received, "mixed_premise": mixed_premise,
              "catalogue_context": bool(catalogue_context)}
     return slots
