@@ -27,4 +27,4 @@ todo/*
 !todo/README.md
 data/private/
 .venv/
-funds-data/
+funds-data/*
