@@ -7,6 +7,7 @@ agent-config.local.yaml
 
 # demo runtime
 .env
+.vscode/
 data/*.bak
 data/*.tmp
 __pycache__/
@@ -18,5 +19,6 @@ eval_with_llm.txt
 eval_clean.txt
 data/embeddings.json
 data/ingestion/
+data/private/
 todo/*
 !todo/README.md

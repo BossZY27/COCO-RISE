@@ -19,8 +19,7 @@ from . import store
 DATA = Path(__file__).resolve().parent.parent / "data"
 SOURCE_DIR = Path(os.getenv(
     "IRFA_SOURCE_DIR",
-    str(Path(__file__).resolve().parents[3] / "IRFA" / "resource" / "Docs"
-        / "Seminar_resource" / "Funds_resource"),
+    str(DATA / "private"),
 ))
 TOKEN = os.getenv("IRFA_ADMIN_TOKEN", "")
 _LOCK = threading.Lock()
