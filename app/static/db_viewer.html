@@ -1,0 +1,110 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COCO-RISE Database Inspector — โครงสร้างฐานข้อมูล 4 ชั้น & PostgreSQL/pgvector</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:"Leelawadee UI",system-ui,sans-serif;color:#1e2d3d;background:#f4f7fb}
+header{background:#153e66;color:#fff;padding:16px clamp(16px,4vw,42px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:12px;color:#cbe0f5}
+.back{color:#fff;text-decoration:none;background:#245785;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700}
+main{max-width:1280px;margin:20px auto;padding:0 clamp(14px,3vw,32px) 40px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #dbe6f0;border-radius:12px;padding:13px 15px;box-shadow:0 2px 6px #153e6608}
+.card .label{font-size:12px;color:#62778c}.card .val{font-size:21px;font-weight:800;color:#153e66;margin-top:4px}.card .sub{font-size:11px;color:#4a6782;margin-top:3px}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.tabs button{border:1px solid #cedbe8;background:#fff;color:#234361;padding:8px 13px;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
+.tabs button.active{background:#153e66;color:#fff;border-color:#153e66}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:#fff;border:1px solid #dbe6f0;border-radius:11px;padding:10px 14px;margin-bottom:12px;font-size:13px}
+.toolbar input[type="search"]{border:1px solid #cad8e6;border-radius:8px;padding:6px 10px;min-width:240px;font:inherit}
+.table-wrap{background:#fff;border:1px solid #dbe6f0;border-radius:12px;overflow:auto;max-height:62vh;box-shadow:0 2px 8px #153e6608}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:9px 11px;border-bottom:1px solid #e9f0f6;text-align:left;vertical-align:top}
+th{background:#eef4fa;color:#173d62;position:sticky;top:0;z-index:1;white-space:nowrap}
+tr:hover td{background:#f9fcff}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+.ok{background:#e3f7ec;color:#146c38}.wait{background:#fff3cd;color:#8a5a00}
+details.schema{margin-top:18px;background:#fff;border:1px solid #dbe6f0;border-radius:12px;padding:12px 16px}
+details.schema summary{cursor:pointer;font-weight:700;color:#153e66;font-size:14px}
+pre{background:#112336;color:#e4effa;padding:14px;border-radius:9px;overflow:auto;font-size:12px;line-height:1.5}
+</style></head><body>
+<header>
+  <div>
+    <h1>🗄️ COCO-RISE Database Inspector (ชุดข้อมูล 4 ชั้น &amp; โครงสร้าง PostgreSQL + pgvector)</h1>
+    <p>ฐานข้อมูล SQL ในตัว (<code>data/coco_rise.db</code>) จับคู่ตรงตามแผนภาพสถาปัตยกรรมระบบและเล่มโครงงาน ข้อ 4.4 / 5.2 (ไม่ใช้ ChromaDB)</p>
+  </div>
+  <a class="back" href="/">← กลับหน้าถาม-ตอบ</a>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+  <div class="tabs" id="tabs">
+    <button type="button" data-table="document_registry" class="active">ชั้นที่ 1: ทะเบียนเอกสาร (document_registry)</button>
+    <button type="button" data-table="document_chunks">ชั้นที่ 2: ข้อความ + BM25 + pgvector (document_chunks)</button>
+    <button type="button" data-table="fund_facts">ชั้นที่ 3.1: ข้อเท็จจริงวงเงิน (fund_facts)</button>
+    <button type="button" data-table="eligibility_rules">ชั้นที่ 3.2: กฎเงื่อนไข (eligibility_rules)</button>
+    <button type="button" data-table="eval_dataset">ชั้นที่ 4: ชุดคำถามทดสอบ (eval_dataset)</button>
+    <button type="button" data-table="applicant_profiles">โปรไฟล์ผู้ใช้ (applicant_profiles · PDPA)</button>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="ค้นหาในตารางนี้ (เช่น ชื่อทุน, เลขข้อ, เอกสาร)...">
+    <label><input type="checkbox" id="onlyVerified"> แสดงเฉพาะแถวที่อนุมัติแล้ว (<code>verified = 1</code>)</label>
+    <span id="rowCount" style="margin-left:auto;color:#5a6d80;font-weight:700"></span>
+  </div>
+  <div class="table-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  <details class="schema" open>
+    <summary>📄 ดูคำสั่งสร้างตาราง PostgreSQL + pgvector (app/infrastructure/postgres/postgres_schema.sql)</summary>
+    <pre id="schemaSql">กำลังโหลด...</pre>
+  </details>
+</main>
+<script>
+let activeTable = 'document_registry';
+const qInput = document.getElementById('q');
+const onlyVer = document.getElementById('onlyVerified');
+async function load() {
+  const params = new URLSearchParams({table: activeTable, only_verified: onlyVer.checked ? '1' : '0', q: qInput.value});
+  const data = await (await fetch('/v1/db/overview?' + params.toString())).json();
+  const c = data.counts, s = data.stats;
+  document.getElementById('cards').innerHTML = `
+    <div class="card"><div class="label">ชั้นที่ 1 ทะเบียนเอกสาร</div><div class="val">${c.document_registry} ฉบับ</div><div class="sub">หลักเกณฑ์กลาง + ประกาศประจำปี</div></div>
+    <div class="card"><div class="label">ชั้นที่ 2 ข้อความ + pgvector</div><div class="val">${c.document_chunks} แถว</div><div class="sub">ยืนยันแล้ว ${s.verified_chunks} แถว · เวกเตอร์ ${s.vector_chunks} แถว (${s.vector_model})</div></div>
+    <div class="card"><div class="label">ชั้นที่ 3 ข้อเท็จจริง &amp; กฎ</div><div class="val">${c.fund_facts} ข้อเท็จจริง / ${c.eligibility_rules} กฎ</div><div class="sub">ยืนยันแล้ว ${s.verified_facts} แถว (แยกเพดาน/จัดสรรรายปี)</div></div>
+    <div class="card"><div class="label">ชั้นที่ 4 ชุดคำถาม &amp; โปรไฟล์</div><div class="val">${c.eval_dataset} ข้อทดสอบ</div><div class="sub">โปรไฟล์จำลอง ${c.applicant_profiles} รายการ (ปกปิดตาม PDPA)</div></div>
+  `;
+  document.getElementById('schemaSql').textContent = data.postgres_schema || '';
+  const rows = data.rows || [];
+  document.getElementById('rowCount').textContent = `แสดง ${rows.length} แถว จากตาราง ${data.selected_table}`;
+  const thead = document.querySelector('#tbl thead');
+  const tbody = document.querySelector('#tbl tbody');
+  thead.replaceChildren(); tbody.replaceChildren();
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td style="padding:18px;color:#697b8e">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการกรอง</td></tr>';
+    return;
+  }
+  const cols = Object.keys(rows[0]);
+  const trHead = document.createElement('tr');
+  for (const col of cols) { const th = document.createElement('th'); th.textContent = col; trHead.appendChild(th); }
+  thead.appendChild(trHead);
+  for (const row of rows) {
+    const tr = document.createElement('tr');
+    for (const col of cols) {
+      const td = document.createElement('td');
+      const v = row[col];
+      if (col === 'verified') {
+        td.innerHTML = v ? '<span class="badge ok">verified (1)</span>' : '<span class="badge wait">pending (0)</span>';
+      } else {
+        td.textContent = v === null || v === undefined ? '-' : String(v);
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+for (const btn of document.querySelectorAll('#tabs button')) {
+  btn.onclick = () => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTable = btn.dataset.table;
+    load();
+  };
+}
+qInput.oninput = () => load();
+onlyVer.onchange = () => load();
+load();
+</script></body></html>

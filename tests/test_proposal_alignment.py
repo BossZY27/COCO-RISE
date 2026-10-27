@@ -3,6 +3,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.modules.documents import review
 
 
 client = TestClient(app)
@@ -17,7 +18,8 @@ def test_proposal_api_names_are_available_without_removing_versioned_routes():
     assert "post" in paths["/v1/admin/documents"]
 
 
-def test_update_alias_keeps_admin_authentication():
+def test_update_alias_keeps_admin_authentication(monkeypatch):
+    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
     response = client.post(
         "/api/update",
         content=b"%PDF-1.4\n%%EOF",
@@ -41,7 +43,8 @@ def test_demo_explains_current_architecture_and_profile_scope():
     assert "body{overflow:hidden;" in page
 
 
-def test_admin_upload_uses_the_proposal_update_endpoint():
+def test_admin_upload_uses_the_proposal_update_endpoint(monkeypatch):
+    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
     page = client.get("/admin").text
 
     assert "POST /api/update" in page

@@ -2,7 +2,9 @@
 
 import asyncio
 
-from app import llm, pipeline, store
+from app.infrastructure.ollama import legacy as llm
+from app.modules.knowledge import corpus as store
+from app.modules.query import engine as pipeline
 from scripts.compare_proposal_retrieval import load_cases, rank_methods, score, verified_fact_coverage
 
 

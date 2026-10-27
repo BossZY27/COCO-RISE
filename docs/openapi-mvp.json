@@ -3280,7 +3280,8 @@
                 "minimum": 0.0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
               }
             ],
             "nullable": true
@@ -3293,7 +3294,8 @@
                 "minimum": 0.0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
               }
             ],
             "nullable": true
@@ -3400,6 +3402,7 @@
           "amount": {
             "title": "Amount",
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "nullable": true
           },
           "status": {
@@ -3594,6 +3597,11 @@
             "maxLength": 200,
             "minLength": 1,
             "nullable": true
+          },
+          "context": {
+            "description": "บริบทที่สรุปแล้วของการสนทนาปัจจุบันในเบราว์เซอร์",
+            "$ref": "#/components/schemas/SessionContext",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -3734,6 +3742,47 @@
           "confirmed_pages"
         ],
         "title": "ReviewDocument"
+      },
+      "SessionContext": {
+        "properties": {
+          "fund": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Fund"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string",
+            "maxLength": 40,
+            "nullable": true
+          },
+          "fiscal_year": {
+            "type": "integer",
+            "maximum": 2700.0,
+            "minimum": 2500.0,
+            "title": "Fiscal Year"
+          },
+          "year_assumed": {
+            "type": "boolean",
+            "title": "Year Assumed",
+            "default": true
+          },
+          "intent": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Intent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fund",
+          "fiscal_year",
+          "intent"
+        ],
+        "title": "SessionContext",
+        "description": "The last resolved topic in one browser chat, never an authority for facts."
       },
       "UploadResponse": {
         "properties": {

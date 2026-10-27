@@ -1,4 +1,4 @@
-﻿# เปิดระบบ RISE บนเครื่องนี้
+# เปิดระบบ RISE บนเครื่องนี้
 #   .\run.ps1            เปิดเซิร์ฟเวอร์
 #   .\run.ps1 -Reindex   สร้างเวกเตอร์ใหม่ก่อนเปิด (ใช้เมื่อเพิ่งอนุมัติเอกสารใหม่)
 #   .\run.ps1 -Check     ตรวจความพร้อมอย่างเดียว ไม่เปิดเซิร์ฟเวอร์
@@ -104,6 +104,13 @@ if ($friendMode) {
     Set-DemoEnvironment "RISE_TRUST_PROXY_USER" "off"
     Set-DemoEnvironment "RISE_LLM_CONCURRENCY" "1"
     Set-DemoEnvironment "RISE_AUDIT" $(if ($FriendDemoAudit) { "on" } else { "off" })
+}
+
+if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("RISE_ANSWER_MODE", "Process"))) {
+    Set-DemoEnvironment "RISE_ANSWER_MODE" "llm"
+}
+if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("RISE_SLOT_LLM_FALLBACK", "Process"))) {
+    Set-DemoEnvironment "RISE_SLOT_LLM_FALLBACK" "on"
 }
 
 Write-Host "== ตรวจความพร้อม ==" -ForegroundColor Cyan

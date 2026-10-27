@@ -21,6 +21,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core import security as limits
 from app.infrastructure.json import audit
+from app.infrastructure.postgres import inspector as db_inspector
 from app.modules.knowledge import corpus as store
 from app.infrastructure.ollama import legacy as llm
 from app.modules.documents import pdf_inspection
@@ -120,7 +121,13 @@ async def lifespan(_app: FastAPI):
         STATUS["ingestion"] = f"อ่านสถานะงานไม่ได้: {exc}"
         LOGGER.exception("Ingestion restart recovery skipped because persisted state is unreadable")
     _start_embedding_warmup()
-    STATUS["llm"] = "ปิดการเขียนคำตอบอิสระ ใช้ข้อความจากข้อมูลที่ตรวจแล้ว"
+    db_inspector.sync_database()
+    if pipeline.ANSWER_MODE == "llm":
+        STATUS["llm"] = f"ใช้โมเดล {llm.SMALL or llm.MAIN} สร้างคำตอบ RAG จากหลักฐานที่ตรวจแล้ว"
+    elif pipeline.ANSWER_MODE == "typed_claim":
+        STATUS["llm"] = f"ใช้โมเดล {llm.SMALL or llm.MAIN} สร้าง Typed Claim JSON และตรวจด้วย Verifier"
+    else:
+        STATUS["llm"] = "ปิดการเขียนคำตอบอิสระ ใช้ข้อความจากข้อมูลที่ตรวจแล้ว"
     yield
 
 
@@ -422,24 +429,50 @@ def healthz():
     runtime = runtime_services.get()
     if runtime is not None and not runtime.database.ready():
         raise HTTPException(status_code=503, detail="Migrations not current")
+    main_model = (llm.SMALL or llm.MAIN) if pipeline.ANSWER_MODE in ("llm", "typed_claim") else None
     return {"status": "ok", "chunks": len(store.view().CHUNKS), "facts": len(store.view().FACTS), "rules": len(store.view().RULES),
             "facts_awaiting_review": unverified,
-            "answer_mode": pipeline.ANSWER_MODE, "main_model": None, "embed_model": llm.EMBED_MODEL,
+            "answer_mode": pipeline.ANSWER_MODE, "main_model": main_model, "embed_model": llm.EMBED_MODEL,
             "vectors_ready": store.vectors_ready(), "semantic_backend": pipeline.semantic_backend(),
             "warmup": STATUS}
 
 
 @app.get("/v1/models")
 def models():
+    if pipeline.ANSWER_MODE == "llm":
+        available = llm.answer_models()
+        default_model = llm.SMALL or llm.MAIN
+        return {
+            "enabled": True,
+            "default": default_model,
+            "models": available,
+            "answer_mode": pipeline.ANSWER_MODE,
+            "message": f"โมเดล {default_model} สร้างคำตอบ RAG จากหลักฐานที่ตรวจแล้ว พร้อมตรวจตัวเลขและเอกสารอ้างอิงทุกครั้ง",
+        }
+    if pipeline.ANSWER_MODE == "typed_claim":
+        available = llm.answer_models()
+        default_model = llm.SMALL or llm.MAIN
+        return {
+            "enabled": True,
+            "default": default_model,
+            "models": available,
+            "answer_mode": pipeline.ANSWER_MODE,
+            "message": f"โมเดล {default_model} สร้างเฉพาะ Typed Claim JSON (อ้างอิง fact_id/chunk_id) และผ่าน Verifier ทุกครั้ง",
+        }
     return {"enabled": False, "default": None, "models": [],
             "answer_mode": pipeline.ANSWER_MODE,
             "message": "โหมดปลอดภัยใช้คำตอบที่โค้ดประกอบจากข้อมูลที่ตรวจแล้ว"}
 
 
-def _selected_model(name: str | None) -> None:
-    if name:
+def _selected_model(name: str | None) -> str | None:
+    if not name:
+        return None
+    if pipeline.ANSWER_MODE not in ("llm", "typed_claim"):
         raise HTTPException(status_code=400, detail="โหมดปลอดภัยยังไม่เปิดให้โมเดลเขียนคำตอบอิสระ")
-    return None
+    allowed = {m["name"] for m in llm.answer_models()} | {llm.SMALL, llm.MAIN}
+    if name not in allowed:
+        raise HTTPException(status_code=400, detail="ไม่พบโมเดลที่เลือกในรายการที่ระบบอนุญาต")
+    return name
 
 
 @app.post("/v1/feedback")
@@ -479,10 +512,15 @@ def feedback(
 
 @app.get("/v1/personas")
 def personas():
-    return list(store.view().PERSONAS.values())
+    # PDPA Data Minimization: expose only ID, display label, and source to the browser.
+    return [
+        {"id": p["id"], "name": p["name"], "source": p.get("source", "unknown")}
+        for p in store.view().PERSONAS.values()
+    ]
 
 
-@app.post("/v1/query")
+@app.post("/api/query", summary="Ask a verified research-fund question")
+@app.post("/v1/query", summary="Ask a verified research-fund question")
 async def query(
     body: Query, request: Request,
     x_user_id: str | None = Header(default=None, max_length=128),
@@ -490,7 +528,8 @@ async def query(
     # The proxy sets X-User-Id after it checks the session. The body field is only for the demo page.
     remote = request.client.host if request.client else "anonymous"
     user_id, question, history = _accept(body, x_user_id, remote)
-    result = await pipeline.run(question, user_id, history, _selected_model(body.model))
+    context = body.context.model_dump() if body.context else None
+    result = await pipeline.run(question, user_id, history, _selected_model(body.model), context)
     audit.record({**result, "question": question}, user_id)
     return result
 
@@ -503,9 +542,10 @@ async def query_stream(
     remote = request.client.host if request.client else "anonymous"
     user_id, question, history = _accept(body, x_user_id, remote)
     model = _selected_model(body.model)
+    context = body.context.model_dump() if body.context else None
 
     async def events():
-        async for event in pipeline.run_stream(question, user_id, history, model):
+        async for event in pipeline.run_stream(question, user_id, history, model, context):
             if event.get("type") == "done":
                 audit.record({**event, "question": question}, user_id)
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
@@ -513,6 +553,17 @@ async def query_stream(
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 # Keep the demo interface in a separate HTML file so its chat state can be tested directly.
 PAGE = (Path(__file__).resolve().parents[2] / "static" / "chat.html").read_text(encoding="utf-8")
+DB_PAGE = (Path(__file__).resolve().parents[2] / "static" / "db_viewer.html").read_text(encoding="utf-8")
+
+
+@app.get("/v1/db/overview", summary="Inspect the 4-layer SQLite/PostgreSQL database")
+def db_overview(table: str = "document_registry", only_verified: bool = False, q: str = ""):
+    return db_inspector.get_overview(table=table, only_verified=only_verified, q=q)
+
+
+@app.get("/db", response_class=HTMLResponse, include_in_schema=False)
+def db_viewer():
+    return DB_PAGE
 
 
 @app.get("/", response_class=HTMLResponse)

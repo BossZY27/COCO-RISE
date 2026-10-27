@@ -107,5 +107,5 @@ def test_all_documentation_pages_and_specs_are_disabled_with_setting():
 
 def test_saved_contract_matches_current_application_schemas():
     from scripts.export_openapi import design_schema
-    saved = json.loads((ROOT / "docs/openapi-mvp.json").read_text())
+    saved = json.loads((ROOT / "docs/openapi-mvp.json").read_text(encoding="utf-8"))
     assert saved == design_schema()

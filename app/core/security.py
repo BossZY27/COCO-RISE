@@ -129,9 +129,42 @@ def clean_history(raw: list[str] | None) -> list[str]:
     return [h for h in items if h][-MAX_HISTORY_TURNS:]
 
 
+THAI_NATIONAL_ID_RE = re.compile(r"(?<!\d)\d(?:[- ]?\d){12}(?!\d)")
+THAI_PHONE_RE = re.compile(
+    r"(?<!\d)(?:0[689]\d[- ]?\d{3}[- ]?\d{4}|0[23457][- ]?\d{3}[- ]?\d{4})(?!\d)"
+)
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+SELF_DECLARED_NAME_RE = re.compile(
+    r"(?:ผมชื่อ|ฉันชื่อ|ดิฉันชื่อ|หนูชื่อ|ชื่อ-นามสกุล)\s*(?:นาย|นาง|นางสาว|น\.ส\.|ดร\.|ผศ\.|รศ\.|ศ\.|อ\.)?\s*[ก-๙A-Za-z]+(?:\s+[ก-๙A-Za-z]+)?"
+)
+
+
+def redact_pii(raw: str | None) -> str:
+    """Mask personal identifiers (Thai ID, phone, email, self-declared full name) before LLM calls or audit logs."""
+    if not raw:
+        return ""
+    text = EMAIL_RE.sub("[ปกปิดอีเมล]", raw)
+    text = THAI_NATIONAL_ID_RE.sub("[ปกปิดเลขประจำตัว]", text)
+    text = THAI_PHONE_RE.sub("[ปกปิดเบอร์โทรศัพท์]", text)
+    text = SELF_DECLARED_NAME_RE.sub("[ปกปิดชื่อส่วนบุคคล]", text)
+    return text
+
+
+def contains_pii(raw: str | None) -> bool:
+    """Return True when the text contains recognizable personal identifiers."""
+    if not raw:
+        return False
+    return bool(
+        EMAIL_RE.search(raw)
+        or THAI_NATIONAL_ID_RE.search(raw)
+        or THAI_PHONE_RE.search(raw)
+        or SELF_DECLARED_NAME_RE.search(raw)
+    )
+
+
 def clean_feedback_text(raw: str) -> str:
     """Remove log-hostile control characters without changing the user's wording."""
-    return CONTROL_CHARS.sub(" ", raw or "").strip()
+    return redact_pii(CONTROL_CHARS.sub(" ", raw or "").strip())
 
 
 def _take(

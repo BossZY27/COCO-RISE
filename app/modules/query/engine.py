@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from app.modules.knowledge import corpus as store
 from app.infrastructure.ollama import legacy as llm
 from . import persona as identity
-from . import answers, understand
+from . import answers, claims, understand
 from .composer import _catalogue_answer, _pending_notice, compose_answer
 from .patterns import (
     BROAD_ELIGIBILITY_RE,
@@ -49,7 +49,8 @@ def thai_fiscal_year(now: datetime | None = None) -> int:
 # One question at a time reaches the model. A second caller waits rather than halving the speed of both,
 # because on a CPU two answers in parallel take about twice as long each and both miss the 40 second budget.
 LLM_SLOTS = asyncio.Semaphore(int(os.getenv("RISE_LLM_CONCURRENCY", "1")))
-ANSWER_MODE = "verified_template"
+ANSWER_MODE = os.getenv("RISE_ANSWER_MODE", os.getenv("IRFA_ANSWER_MODE", "verified_template")).strip() or "verified_template"
+SLOT_LLM_FALLBACK = os.getenv("RISE_SLOT_LLM_FALLBACK", os.getenv("IRFA_SLOT_LLM_FALLBACK", "off")).strip().lower() in ("1", "on", "true", "yes")
 SEMANTIC_QUERY_TIMEOUT = max(0.1, float(os.getenv("RISE_SEMANTIC_QUERY_TIMEOUT", "2")))
 SEMANTIC_RETRY_SECONDS = max(1.0, float(os.getenv("RISE_SEMANTIC_RETRY_SECONDS", "30")))
 _SEMANTIC_CIRCUIT_LOCK = threading.Lock()
@@ -203,7 +204,7 @@ def _explicit_annex_fund(question: str, mentioned: list[dict],
 
 
 def analyze(question: str, history: list[str] | None = None, profile: dict | None = None,
-            context: dict | None = None) -> dict:
+            context: dict | None = None, use_llm: bool | None = None) -> dict:
     """Fill the slots the rest of the pipeline needs.
 
     A follow-up such as "แล้วชั้นกลางล่ะ" only makes sense with the previous turn, so missing slots fall back
@@ -392,15 +393,36 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
             elif understand.wants_details(previous):
                 intent = "details"
     if intent == "unknown" and previous and constrained_followup:
-        previous_intent = analyze(previous, history[:-1], profile)["intent"]
+        previous_intent = analyze(previous, history[:-1], profile, use_llm=False)["intent"]
         if previous_intent in ("amount", "ceiling", "tiers", "details", "definition", "eligibility", "application"):
             intent = previous_intent
     if intent == "unknown" and used_context and context.get("intent") in (
             "amount", "ceiling", "tiers", "details", "definition", "eligibility", "application"):
         intent = context["intent"]
+    method = "rules"
+    allow_slot_llm = use_llm if use_llm is not None else SLOT_LLM_FALLBACK
+    needs_slot_llm = intent == "unknown" or (
+        fund is None and intent in ("amount", "ceiling", "tiers", "details", "application")
+    )
+    if (allow_slot_llm and question and needs_slot_llm
+            and not points_back and not broad_eligibility and not personal_history
+            and not recommendation_request and not clause_conflict
+            and not CLAUSE_REFERENCE_RE.search(question)
+            and not chatter and not topic and not open_now and not hypothetical):
+        claimed = claims.extract_slots_with_llm(question, known_fund=fund)
+        if claimed is not None:
+            if fund is None and claimed.fund:
+                fund, confidence, from_current = claimed.fund, 0.85, True
+            if tier is None and claimed.tier:
+                tier = claimed.tier
+            if assumed and claimed.fiscal_year:
+                fiscal_year, assumed = claimed.fiscal_year, False
+            if intent == "unknown" and claimed.intent:
+                intent = claimed.intent
+            method = "rules+llm"
     rewritten = question if from_current else " ".join(x for x in (fund, tier, question) if x)
     slots = {"standalone_question": rewritten.strip(), "fund": fund, "tier": tier, "fiscal_year": fiscal_year,
-             "year_assumed": assumed, "intent": intent, "confidence": round(confidence, 2), "method": "rules",
+             "year_assumed": assumed, "intent": intent, "confidence": round(confidence, 2), "method": method,
              "unresolved_reference": points_back and fund is None, "alternatives": alternatives,
              "clause_conflict": clause_conflict,
              "funds": relation_funds if hypothetical else [m["fund"] for m in named],
@@ -416,6 +438,9 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
 def _semantic(query: str, year: int | None) -> tuple[list[dict], str]:
     """Real vectors when the embedding model answers, trigrams when it does not."""
     global _SEMANTIC_FAILURE_UNTIL
+    if ANSWER_MODE in ("llm", "typed_claim"):
+        # On CPU-only Ollama, calling bge-m3 unloads the active chat LLM and adds ~10s reload latency.
+        return store.semantic_search(query, year, 10), "trigram"
     if store.vectors_ready():
         # A complete on-disk cache can still be present while Ollama is down.
         # Without a circuit breaker every question would pay the transport
@@ -527,7 +552,35 @@ def _what_if_ruling(profile: dict, slots: dict) -> dict:
     else:
         for fund in received:
             held.pop(fund, None)
-    return check_rules({**profile, "grants_this_year": held}, {**slots, "fund": target})
+    hyp_profile = {**profile, "grants_this_year": held}
+    ruling = check_rules(hyp_profile, {**slots, "fund": target})
+    if ruling["verdict"] == "unknown" and slots.get("premise_received", True):
+        # Allow anonymous users (P5) to check cross-grant restrictions without disclosing personal attributes.
+        rules = store.rules_for(target, slots["fiscal_year"])
+        if rules:
+            rule = rules[0]
+            for cond in rule["conditions"]:
+                if cond["op"] == "not_received":
+                    blocker = _blocking_grant(hyp_profile, cond)
+                    if blocker is not None:
+                        return {
+                            "verdict": "not_eligible",
+                            "reason": cond["fail_reason"].replace("{fund}", blocker),
+                            "source": rule["source"],
+                            "missing": [],
+                            "field": cond["field"],
+                        }
+                elif cond["op"] == "lt" and cond["field"].startswith("grants_this_year."):
+                    value = _profile_value(hyp_profile, cond["field"])
+                    if not ((value or 0) < cond["value"]):
+                        return {
+                            "verdict": "not_eligible",
+                            "reason": cond["fail_reason"],
+                            "source": rule["source"],
+                            "missing": [],
+                            "field": cond["field"],
+                        }
+    return ruling
 
 
 
@@ -656,6 +709,38 @@ def _model_may_rephrase(used: list[dict], evidence: dict, slots: dict | None = N
     return False
 
 
+def _model_may_generate_rag(
+    used: list[dict],
+    citations: list[str],
+    evidence: dict,
+    slots: dict | None = None,
+    model: str | None = None,
+) -> bool:
+    """Return True when Step 3 LLM Answer Generator may write natural Thai prose from verified RAG evidence."""
+    return claims.may_generate_llm_answer(used, citations, evidence, slots, ANSWER_MODE, model)
+
+
+def _model_may_emit_claims(
+    used: list[dict],
+    evidence: dict,
+    slots: dict | None = None,
+    model: str | None = None,
+) -> bool:
+    """Return True when closed-schema typed claims may be requested and validated."""
+    return claims.may_emit_typed_claims(used, evidence, slots, ANSWER_MODE, model)
+
+
+def _model_may_emit_passage_claim(
+    used: list[dict],
+    citations: list[str],
+    evidence: dict,
+    slots: dict | None = None,
+    model: str | None = None,
+) -> bool:
+    """Return True when a verified non-fact answer may emit a TypedPassageClaim."""
+    return claims.may_emit_passage_claim(used, citations, evidence, slots, ANSWER_MODE, model)
+
+
 async def run(question: str, persona_id: str = "P1", history: list[str] | None = None,
               model: str | None = None, context: dict | None = None) -> dict:
     times: dict[str, float] = {}
@@ -663,7 +748,70 @@ async def run(question: str, persona_id: str = "P1", history: list[str] | None =
     profile, slots, evidence, ruling, answer, citations, used = await _prepare(
         question, persona_id, history, times, context)
     source = "template"
-    if _model_may_rephrase(used, evidence, slots):
+    if ANSWER_MODE == "llm" and _model_may_generate_rag(used, citations, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        try:
+            with _stage(times, "llm"):
+                ok, rag_problems, llm_text, chosen_model = await asyncio.to_thread(
+                    claims.request_llm_rag_answer, question, slots, used, ruling, evidence, answer, effective_model
+                )
+                if ok and llm_text:
+                    vcheck = verify(llm_text, citations, used, evidence, slots, slots["intent"] != "list", ruling)
+                    if vcheck["ok"]:
+                        answer = llm_text
+                        selected_model = chosen_model
+                        source = f"llm:{chosen_model}"
+                    else:
+                        times["claim_rejected"] = "; ".join(vcheck["problems"][:2]) or "verify_failed"
+                else:
+                    times["claim_rejected"] = "; ".join(rag_problems[:2]) if rag_problems else "invalid_prose"
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_emit_claims(used, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        try:
+            with _stage(times, "llm"):
+                ok, claim_problems, bundle, chosen_model = await asyncio.to_thread(
+                    claims.request_typed_claims, slots, used, ruling, evidence, effective_model
+                )
+                if ok and bundle is not None:
+                    rendered, rendered_citations, rendered_used = claims.render_typed_claims(
+                        bundle, slots, evidence, ruling, profile
+                    )
+                    if verify(rendered, rendered_citations, rendered_used, evidence, slots, ruling=ruling)["ok"]:
+                        answer, citations, used = rendered, rendered_citations, rendered_used
+                        selected_model = chosen_model
+                        source = f"typed_claim:{chosen_model}"
+                    else:
+                        times["claim_rejected"] = "verify_failed"
+                else:
+                    times["claim_rejected"] = "; ".join(claim_problems[:2]) if claim_problems else "invalid_claim"
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_emit_passage_claim(used, citations, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        try:
+            with _stage(times, "llm"):
+                ok, claim_problems, pclaim, chosen_model = await asyncio.to_thread(
+                    claims.request_passage_claim, slots, citations, effective_model
+                )
+                if ok and pclaim is not None:
+                    if verify(answer, citations, used, evidence, slots, slots["intent"] != "list", ruling)["ok"]:
+                        selected_model = chosen_model
+                        source = f"typed_claim:{chosen_model}"
+                    else:
+                        times["claim_rejected"] = "verify_failed"
+                else:
+                    times["claim_rejected"] = "; ".join(claim_problems[:2]) if claim_problems else "invalid_claim"
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_rephrase(used, evidence, slots):
         with _queue_wait(times):
             await LLM_SLOTS.acquire()
         try:
@@ -726,7 +874,94 @@ async def run_stream(question: str, persona_id: str = "P1", history: list[str] |
     answer, source = template, "template"
     if _current_corpus() and verify(template, citations, used, evidence, slots, slots["intent"] != "list", ruling)["ok"]:
         yield {"type": "preview", "answer": template, "citations": citations}
-    if _model_may_rephrase(used, evidence, slots):
+    if ANSWER_MODE == "llm" and _model_may_generate_rag(used, citations, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        if LLM_SLOTS.locked():
+            yield {"type": "stage", "waiting": "มีคำถามอื่นใช้โมเดลอยู่ กำลังรอคิว"}
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        t0 = time.perf_counter()
+        try:
+            ok, rag_problems, llm_text, chosen_model = await asyncio.to_thread(
+                claims.request_llm_rag_answer, question, slots, used, ruling, evidence, template, effective_model
+            )
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            if ok and llm_text:
+                vcheck = verify(llm_text, citations, used, evidence, slots, slots["intent"] != "list", ruling)
+                if vcheck["ok"]:
+                    answer = llm_text
+                    selected_model = chosen_model
+                    source = f"llm:{chosen_model}"
+                else:
+                    times["claim_rejected"] = "; ".join(vcheck["problems"][:2]) or "verify_failed"
+                    yield {"type": "replace", "reason": "คำตอบจากโมเดลไม่ผ่านการตรวจ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+            else:
+                times["claim_rejected"] = "; ".join(rag_problems[:2]) if rag_problems else "invalid_prose"
+                yield {"type": "replace", "reason": "คำตอบจากโมเดลไม่ผ่านการตรวจ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+        except Exception as exc:
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            times["llm_error"] = type(exc).__name__
+            yield {"type": "replace", "reason": "เรียกโมเดลไม่สำเร็จ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_emit_claims(used, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        if LLM_SLOTS.locked():
+            yield {"type": "stage", "waiting": "มีคำถามอื่นใช้โมเดลอยู่ กำลังรอคิว"}
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        t0 = time.perf_counter()
+        try:
+            ok, claim_problems, bundle, chosen_model = await asyncio.to_thread(
+                claims.request_typed_claims, slots, used, ruling, evidence, effective_model
+            )
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            if ok and bundle is not None:
+                rendered, rendered_citations, rendered_used = claims.render_typed_claims(
+                    bundle, slots, evidence, ruling, profile
+                )
+                if verify(rendered, rendered_citations, rendered_used, evidence, slots, ruling=ruling)["ok"]:
+                    answer, citations, used = rendered, rendered_citations, rendered_used
+                    selected_model = chosen_model
+                    source = f"typed_claim:{chosen_model}"
+                else:
+                    times["claim_rejected"] = "verify_failed"
+                    yield {"type": "replace", "reason": "คำตอบจากโมเดลไม่ผ่านการตรวจ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+            else:
+                times["claim_rejected"] = "; ".join(claim_problems[:2]) if claim_problems else "invalid_claim"
+                yield {"type": "replace", "reason": "คำตอบจากโมเดลไม่ผ่านการตรวจ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+        except Exception as exc:
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            times["llm_error"] = type(exc).__name__
+            yield {"type": "replace", "reason": "เรียกโมเดลไม่สำเร็จ จึงใช้คำตอบจากข้อมูลที่ตรวจแล้ว"}
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_emit_passage_claim(used, citations, evidence, slots, model):
+        effective_model = model or llm.SMALL or llm.MAIN
+        if LLM_SLOTS.locked():
+            yield {"type": "stage", "waiting": "มีคำถามอื่นใช้โมเดลอยู่ กำลังรอคิว"}
+        with _queue_wait(times):
+            await LLM_SLOTS.acquire()
+        t0 = time.perf_counter()
+        try:
+            ok, claim_problems, pclaim, chosen_model = await asyncio.to_thread(
+                claims.request_passage_claim, slots, citations, effective_model
+            )
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            if ok and pclaim is not None:
+                if verify(answer, citations, used, evidence, slots, slots["intent"] != "list", ruling)["ok"]:
+                    selected_model = chosen_model
+                    source = f"typed_claim:{chosen_model}"
+                else:
+                    times["claim_rejected"] = "verify_failed"
+            else:
+                times["claim_rejected"] = "; ".join(claim_problems[:2]) if claim_problems else "invalid_claim"
+        except Exception as exc:
+            times["llm"] = round((time.perf_counter() - t0) * 1000, 1)
+            times["llm_error"] = type(exc).__name__
+        finally:
+            LLM_SLOTS.release()
+    elif _model_may_rephrase(used, evidence, slots):
         if LLM_SLOTS.locked():
             yield {"type": "stage", "waiting": "มีคำถามอื่นใช้โมเดลอยู่ กำลังรอคิว"}
         with _queue_wait(times):

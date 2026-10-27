@@ -66,8 +66,13 @@ def record(result: dict, user_id: str) -> None:
         return runtime.legacy.record_query(result, user_id)
     if not ENABLED:
         return
+    from app.core import security as limits
+    raw_slots = result.get("slots")
+    safe_slots = dict(raw_slots) if isinstance(raw_slots, dict) else raw_slots
+    if isinstance(safe_slots, dict) and isinstance(safe_slots.get("standalone_question"), str):
+        safe_slots["standalone_question"] = limits.redact_pii(safe_slots["standalone_question"])
     row = {"at": datetime.now().isoformat(timespec="seconds"), "user_id": user_id,
-           "question": result.get("question"), "slots": result.get("slots"),
+           "question": limits.redact_pii(result.get("question")), "slots": safe_slots,
            "verdict": result.get("ruling", {}).get("verdict"), "answer": result.get("answer"),
            "citations": result.get("citations"), "answer_source": result.get("answer_source"),
            "blocked": result.get("verify", {}).get("ok") is False,

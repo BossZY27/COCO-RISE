@@ -67,7 +67,7 @@ def installed_chat_models() -> list[dict]:
 
 def allowed_model_names() -> set[str]:
     """The operator's list: the answer model plus any named in RISE_ANSWER_MODELS."""
-    return {MAIN, *ANSWER_MODELS}
+    return {MAIN, SMALL, *ANSWER_MODELS}
 
 
 def answer_models() -> list[dict]:

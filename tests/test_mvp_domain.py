@@ -16,7 +16,8 @@ def test_env_migration_preserves_new_keys_and_secrets(tmp_path):
     assert migrate(path) == 1
     assert path.read_text() == "RISE_ADMIN_TOKEN=new-secret\nRISE_LLM_BASE=http://legacy\n"
     assert migrate(path) == 0
-    assert path.stat().st_mode & 0o077 == 0
+    if __import__("os").name != "nt":
+        assert path.stat().st_mode & 0o077 == 0
 
 
 def test_candidate_gate_rejects_changed_year_amount_fund_and_qualification():

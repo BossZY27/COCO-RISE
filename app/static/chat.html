@@ -25,6 +25,11 @@ button,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacit
 .examples{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:22px}.examples button{border:1px solid #dce7f0;border-radius:11px;background:#fff;color:#315679;padding:9px 12px}
 .turn{margin:0 0 26px}.user{background:#dcecf9;border-radius:16px 16px 4px 16px;padding:12px 16px;margin-left:auto;max-width:min(80%,650px);width:fit-content;white-space:pre-wrap;overflow-wrap:anywhere}
 .assistant{background:#fff;border:1px solid #e1eaf2;border-radius:16px;margin-top:10px;padding:15px 18px;box-shadow:0 2px 9px #1a426007}
+.model-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:9px;border:1px solid transparent}
+.model-badge.llm{background:#e7f4ee;color:#145c38;border-color:#bfe3d0}
+.model-badge.claim{background:#e8f1fb;color:#184a7c;border-color:#c4dbf5}
+.model-badge.tpl{background:#f1f4f8;color:#475c70;border-color:#d8e1eb}
+.model-badge.err{background:#fdecec;color:#982b2b;border-color:#f5c5c5}
 .ans{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere}.cite{color:#a44836;font-size:13px;margin-top:10px;line-height:1.5}.meta{color:#76879a;font-size:12px;margin-top:8px;line-height:1.5;white-space:pre-wrap}.error .ans{color:#a43d32}
 .fb{margin-top:10px}.fb button{border:0;border-radius:8px;background:#eef3f7;color:#2e4e69;padding:6px 10px;font-size:12px;margin-right:6px}.fb span{font-size:12px;color:#16803e}
 .composer{background:#fff;border-top:1px solid #e2eaf2;padding:12px clamp(16px,5vw,60px) 15px}.input-row{display:flex;align-items:flex-end;gap:8px;border:1px solid #cad8e6;border-radius:16px;padding:8px}
@@ -33,7 +38,9 @@ textarea{min-width:0;flex:1;min-height:42px;max-height:130px;resize:none;border:
 @media(max-width:750px){.app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);width:100%;min-width:0}.side,.main,.top,.thread,.composer{min-width:0;max-width:100%}.side{display:block;border-right:0;border-bottom:1px solid #d7e3ee;padding:8px 12px}.brand{display:inline-block;font-size:16px;padding:6px}.new{float:right;padding:7px 10px}.side-label,.side-note{display:none}.sessions{clear:both;display:flex;max-width:100%;gap:4px;overflow:auto}.session{flex:0 0 auto;max-width:175px}.session-name{padding:7px}.delete{padding:6px}.top{padding:10px 16px}.top-row{align-items:flex-start;flex-direction:column;gap:8px}.persona{white-space:normal;width:100%}.persona select{display:block;width:100%;max-width:100%;margin-top:4px}.top .status:nth-of-type(n+3){display:none}.flow{grid-template-columns:1fr 1fr}.thread{padding:16px}.composer{padding:9px 12px}.user{max-width:90%}}
 </style></head><body>
 <div class="app"><aside class="side" aria-label="รายการแชต"><div class="brand">COCO-RISE <span>demo</span></div>
-<button class="new" type="button" id="newChat">＋ แชตใหม่</button><div class="side-label">แชตในเบราว์เซอร์นี้</div>
+<button class="new" type="button" id="newChat">＋ แชตใหม่</button>
+<a class="new" href="/db" style="display:block;text-decoration:none;margin-top:8px;background:#245785">🗄️ ดูตารางฐานข้อมูล 4 ชั้น (/db)</a>
+<div class="side-label">แชตในเบราว์เซอร์นี้</div>
 <div id="sessions" class="sessions"></div><div class="side-note">บทสนทนาเก็บเฉพาะเบราว์เซอร์นี้ ไม่ซิงก์ข้ามเครื่อง</div></aside>
 <main class="main"><header class="top"><div class="top-row"><h1 id="chatTitle">ถามเรื่องทุนวิจัย</h1>
 <label class="persona">โปรไฟล์สมมติ (ใช้ทดสอบกฎเท่านั้น) <select id="persona" aria-label="โปรไฟล์สมมติสำหรับทดสอบกฎ"></select></label></div>
@@ -109,10 +116,34 @@ function renderSidebar() {
     remove.onclick = () => deleteChat(chat.id); row.append(name, remove); list.appendChild(row);
   }
 }
+function resolveTurnBadge(turn) {
+  if (!turn.done) return null;
+  if (turn.error) return {cls: 'err', text: '⚠️ ข้อผิดพลาดการเชื่อมต่อ'};
+  const src = String(turn.answerSource || '');
+  const model = turn.selectedModel || (src.includes(':') ? src.split(':').slice(1).join(':') : null);
+  const slotBy = turn.slotExtractedBy ? ` · สกัดคำถามด้วย ${turn.slotExtractedBy}` : '';
+  if (src.startsWith('llm') || (model && !src.startsWith('typed_claim'))) {
+    return {cls: 'llm', text: `🤖 โมเดลสร้างคำตอบ: ${model || 'qwen3:4b'} (LLM RAG + ผ่าน Verifier)${slotBy}`};
+  }
+  if (src.startsWith('typed_claim')) {
+    return {cls: 'claim', text: `🧩 โมเดลสกัดข้อเท็จจริง: ${model || 'qwen3:4b'} (Typed Claim + ผ่าน Verifier)${slotBy}`};
+  }
+  if (src === 'blocked') {
+    return {cls: 'err', text: '🛡️ ระบบบล็อกคำตอบ (ไม่ผ่านเกณฑ์ตรวจสอบหลักฐาน)'};
+  }
+  return {cls: 'tpl', text: `📋 ระบบประกอบคำตอบตรงจากหลักฐาน (Verified Template · ไม่ผ่าน LLM เขียนประโยค)${slotBy}`};
+}
 function renderTurn(turn) {
   const wrap = document.createElement('div'); wrap.className = 'turn';
   const user = document.createElement('div'); user.className = 'user'; user.textContent = turn.question;
   const assistant = document.createElement('div'); assistant.className = 'assistant' + (turn.error ? ' error' : '');
+  const badgeInfo = resolveTurnBadge(turn);
+  if (badgeInfo) {
+    const badge = document.createElement('div');
+    badge.className = 'model-badge ' + badgeInfo.cls;
+    badge.textContent = badgeInfo.text;
+    assistant.appendChild(badge);
+  }
   const ans = document.createElement('div'); ans.className = 'ans'; ans.textContent = turn.answer || 'กำลังค้นหาหลักฐาน...';
   const cite = document.createElement('div'); cite.className = 'cite';
   if (turn.citations && turn.citations.length > 8) {
@@ -150,8 +181,9 @@ async function refreshStatus() {
     const h = await (await fetch('/healthz')).json();
     const warm = typeof h.warmup.llm === 'object' ? `พร้อม (โหลด ${h.warmup.llm.chat}s)` : h.warmup.llm;
     const pendingFacts = h.facts_awaiting_review ? ` | ตัวเลขรอตรวจ ${h.facts_awaiting_review} แถว` : '';
+    const modeLabel = h.answer_mode === 'llm' ? `LLM RAG (${h.main_model || 'qwen3:4b'})` : h.answer_mode === 'typed_claim' ? `Typed Claim (${h.main_model || 'qwen3:4b'})` : 'ข้อมูลที่ตรวจแล้ว';
     document.getElementById('status').textContent =
-      `คำตอบ: ข้อมูลที่ตรวจแล้ว | สถานะ: ${warm} | ค้นความหมาย: ${h.semantic_backend}${pendingFacts}`;
+      `คำตอบ: ${modeLabel} | สถานะ: ${warm} | ค้นความหมาย: ${h.semantic_backend}${pendingFacts}`;
   } catch (_error) { document.getElementById('status').textContent = 'เซิร์ฟเวอร์เดโมไม่พร้อม กรุณาตรวจการเชื่อมต่อ'; }
 }
 async function ask() {
@@ -173,6 +205,8 @@ async function ask() {
       turn.answer = err.detail || 'เรียกเซิร์ฟเวอร์ไม่สำเร็จ'; turn.error = true; return; }
     const e = await res.json();
     turn.answer = e.answer; turn.citations = e.citations; turn.done = true;
+    turn.answerSource = e.answer_source; turn.selectedModel = e.selected_model;
+    turn.slotExtractedBy = e.slots?.extracted_by || null;
     const rememberedIntents = ['amount', 'ceiling', 'tiers', 'details', 'definition', 'eligibility', 'application'];
     if (e.verify?.ok && e.answer_source !== 'blocked' && e.slots?.fund &&
         rememberedIntents.includes(e.slots.intent) && !e.slots.clause_conflict && !e.slots.alternatives?.length) {
@@ -180,9 +214,11 @@ async function ask() {
         year_assumed: e.slots.year_assumed, intent: e.slots.intent};
     } else if (e.slots?.intent !== 'smalltalk') chat.context = null;
     const t = e.timings_ms;
+    const srcLabel = e.answer_source?.startsWith('llm:') ? `LLM (${e.selected_model || e.answer_source}) + Verifier` : e.answer_source?.startsWith('typed_claim') ? `Typed Claim (${e.selected_model || e.answer_source}) + Verifier` : 'ข้อมูลที่ตรวจแล้ว';
+    const llmMs = t.llm !== undefined ? `, โมเดล ${t.llm} ms` : '';
     turn.meta = `ทุน: ${e.slots.fund || 'ไม่ระบุ'} | ปีงบ: ${e.slots.fiscal_year} | ผลกฎของโปรไฟล์สมมติ: ${e.ruling.verdict}`
-      + ` | คำตอบจาก: ข้อมูลที่ตรวจแล้ว | ค้นความหมาย: ${e.evidence.semantic_by}\n`
-      + `เวลา: วิเคราะห์ ${t.analyze} ms, ค้นคืน ${t.retrieve} ms, ตรวจสิทธิ์ ${t.rules} ms, `
+      + ` | คำตอบจาก: ${srcLabel} | ค้นความหมาย: ${e.evidence.semantic_by}\n`
+      + `เวลา: วิเคราะห์ ${t.analyze} ms, ค้นคืน ${t.retrieve} ms, ตรวจสิทธิ์ ${t.rules} ms${llmMs}, `
       + `ตรวจคำตอบ ${t.verify} ms, รวม ${t.total} ms`;
   } catch (error) {
     turn.answer = error.name === 'AbortError' ? 'ระบบยังไม่ตอบใน 40 วินาที กรุณาลองถามอีกครั้ง'

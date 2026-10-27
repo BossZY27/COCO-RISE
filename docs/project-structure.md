@@ -9,7 +9,7 @@ app/
 ├── bootstrap.py                    process-scoped adapter composition
 ├── core/                           settings, paths, security, errors, dependencies
 ├── modules/
-│   ├── query/                      analysis, persona lookup, templates and verification
+│   ├── query/                      analysis, persona lookup, templates, typed claims, LLM RAG and verification
 │   ├── knowledge/                  facts, rules, corpus, context and citations
 │   ├── retrieval/                  BM25, tokenizer, RRF and semantic orchestration
 │   ├── documents/                  PDF inspection, chunking, review, publication
@@ -17,12 +17,12 @@ app/
 │   ├── feedback/                   v2 feedback API
 │   └── system/                     readiness and dependency status
 ├── infrastructure/
-│   ├── postgres/                   SQLAlchemy, repositories, imports and pgvector
+│   ├── postgres/                   SQLAlchemy, repositories, 4-layer DB inspector, schema DDL and pgvector
 │   ├── ollama/                     bounded model clients and v1 compatibility
 │   ├── files/                      private PDF storage and extraction
 │   └── json/                       append-only compatibility audit adapter
 ├── workers/                        leased OCR, ingestion and indexing jobs
-└── static/                         chat.html and admin.html
+└── static/                         chat.html, admin.html and db_viewer.html
 evaluation/                         offline retrieval comparison code
 migrations/                         Alembic schema
 scripts/                            seed, OpenAPI export and model smoke checks

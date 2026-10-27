@@ -14,4 +14,4 @@ def design_schema():
 
 
 if __name__ == "__main__":
-    Path("docs/openapi-mvp.json").write_text(json.dumps(design_schema(), ensure_ascii=False, indent=2) + "\n")
+    Path("docs/openapi-mvp.json").write_text(json.dumps(design_schema(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

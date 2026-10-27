@@ -13,8 +13,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import llm, pipeline, store  # noqa: E402
-from app.retrieval_experiment import RetrievalComparison  # noqa: E402
+from app.infrastructure.ollama import legacy as llm  # noqa: E402
+from app.modules.knowledge import corpus as store  # noqa: E402
+from app.modules.query import engine as pipeline  # noqa: E402
+from evaluation.retrieval import RetrievalComparison  # noqa: E402
 from scripts.compare_retrieval import systematic_cases  # noqa: E402
 
 METHODS = ("semantic", "hybrid_text", "proposed_retrieval", "semantic_weighted_proposed",

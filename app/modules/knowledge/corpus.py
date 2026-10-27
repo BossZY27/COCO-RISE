@@ -525,6 +525,22 @@ def rrf(ranked_lists: list[list[dict]], k: int = 60, top_k: int = 5,
     return [seen[i] for i in best]
 
 
+def semantic_guarded_rrf(
+    keyword: list[dict],
+    semantic: list[dict],
+    hierarchy: list[dict],
+    k: int = 60,
+    top_k: int = 5,
+    guard_k: int = 3,
+) -> list[dict]:
+    """Keep the top semantic vector matches first and fill remaining slots with RRF."""
+    head = list(semantic[:guard_k])
+    seen_ids = {hit["id"] for hit in head}
+    fused = rrf([keyword, semantic, hierarchy], k=k, top_k=top_k + len(head))
+    tail = [hit for hit in fused if hit["id"] not in seen_ids]
+    return (head + tail)[:top_k]
+
+
 # The legacy facade keeps the existing renderer and fixture tests usable. Runtime
 # requests bind a PostgreSQL snapshot through the same public interface.
 def view():

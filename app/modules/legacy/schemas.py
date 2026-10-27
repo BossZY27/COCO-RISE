@@ -40,6 +40,10 @@ class Query(BaseModel):
     )
     model: str | None = Field(default=None, min_length=1, max_length=200,
                               description="คงไว้เพื่อ compatibility; safe mode จะปฏิเสธค่าที่ไม่ว่าง")
+    context: SessionContext | None = Field(
+        default=None,
+        description="บริบทที่สรุปแล้วของการสนทนาปัจจุบันในเบราว์เซอร์",
+    )
 
 
 class Feedback(BaseModel):
