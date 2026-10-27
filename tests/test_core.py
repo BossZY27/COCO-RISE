@@ -229,6 +229,95 @@ def test_history_is_scanned_past_a_vague_turn():
     assert pipeline.analyze("ขอได้เท่าไร", history)["fund"] == "ทุนวิจัยสถาบัน"
 
 
+def test_session_context_restores_a_fund_and_explicit_year_after_short_history():
+    context = {"fund": "ทุนวิจัยสถาบัน", "tier": None, "fiscal_year": 2568,
+               "year_assumed": False, "intent": "amount"}
+    history = ["แล้วรายละเอียดล่ะ"] * 8
+
+    slots = pipeline.analyze("แล้วเพดานเท่าไร", history, context=context)
+
+    assert slots["fund"] == "ทุนวิจัยสถาบัน"
+    assert slots["fiscal_year"] == 2568
+    assert slots["intent"] == "ceiling"
+
+    answer = asyncio.run(pipeline.run("แล้วเพดานเท่าไร", history=history, context=context))
+    assert answer["slots"]["fund"] == "ทุนวิจัยสถาบัน"
+    assert answer["verify"]["ok"]
+    assert "25,000" in answer["answer"]
+
+
+def test_demo_catalogue_clause_followup_uses_the_reviewed_annex():
+    history = ["มีทุนไรบ้าง", "มีทุนอะไรบ้าง"]
+    slots = pipeline.analyze("ทุน ข้อที่ 1.1 มีเพดานเท่าไหร่", history)
+    assert slots["fund"] == "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ"
+    assert slots["intent"] == "ceiling"
+    answer = asyncio.run(pipeline.run("ทุน ข้อที่ 1.1 มีเพดานเท่าไหร่", history=history))
+    assert answer["verify"]["ok"]
+    assert "1,200,000" in answer["answer"]
+    assert answer["citations"]
+
+
+def test_bare_clause_without_an_annex_context_does_not_guess():
+    slots = pipeline.analyze("ทุนข้อที่ 1.1 มีเพดานเท่าไหร่")
+    assert slots["fund"] is None
+
+
+def test_eligibility_followup_keeps_a_named_fund_in_the_same_chat():
+    history = ["ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ มีเพดานเท่าไหร่"]
+    slots = pipeline.analyze("แล้วใครขอได้", history)
+    assert slots["fund"] == "ทุนสนับสนุนผู้เชี่ยวชาญต่างประเทศ"
+    assert slots["intent"] == "eligibility"
+    context = {"fund": slots["fund"], "tier": None, "fiscal_year": 2569,
+               "year_assumed": True, "intent": "eligibility"}
+    after_person_question = pipeline.analyze("แล้วใครขอได้", ["พระขอได้มั้ย"], context=context)
+    assert after_person_question["fund"] == slots["fund"]
+    assert pipeline.analyze("แล้วใครขอได้")["fund"] is None
+
+
+def test_common_catalogue_spelling_is_recognised():
+    assert pipeline.analyze("มีทุนไรบ้าง")["intent"] == "list"
+    answer = asyncio.run(pipeline.run("มีทุนไรบ้าง"))
+    assert answer["verify"]["ok"] and answer["citations"]
+
+
+def test_session_context_never_overrides_an_explicit_new_fund_or_broad_question():
+    context = {"fund": "ทุนวิจัยสถาบัน", "tier": None, "fiscal_year": 2568,
+               "year_assumed": False, "intent": "amount"}
+
+    switched = pipeline.analyze("ทุนวิจัยในชั้นเรียนปี 2569 คืออะไร", context=context)
+    broad = pipeline.analyze("ฉันขอทุนอะไรได้บ้าง", context=context)
+    unrelated = pipeline.analyze("ช่วยเขียนโค้ดให้หน่อย", context=context)
+
+    assert switched["fund"] == "ทุนวิจัยในชั้นเรียน"
+    assert switched["fiscal_year"] == 2569
+    assert broad["fund"] is None
+    assert unrelated["fund"] is None
+
+
+def test_session_context_keeps_tier_but_a_new_tier_or_year_wins():
+    context = {"fund": "ทุนวิจัยความเป็นเลิศ", "tier": "ชั้นต้น", "fiscal_year": 2568,
+               "year_assumed": False, "intent": "amount"}
+
+    continued = pipeline.analyze("แล้ววงเงินเท่าไร", context=context)
+    changed = pipeline.analyze("แล้วชั้นกลางปี 2569 เท่าไร", context=context)
+
+    assert continued["fund"] == "ทุนวิจัยความเป็นเลิศ"
+    assert continued["tier"] == "ชั้นต้น"
+    assert continued["fiscal_year"] == 2568
+    assert changed["fund"] == "ทุนวิจัยความเป็นเลิศ"
+    assert changed["tier"] == "ชั้นกลาง"
+    assert changed["fiscal_year"] == 2569
+
+
+def test_unrecognised_session_fund_cannot_become_an_answer_subject():
+    context = {"fund": "ทุนซื้อคอมพิวเตอร์", "tier": None, "fiscal_year": 2569,
+               "year_assumed": False, "intent": "amount"}
+
+    slots = pipeline.analyze("แล้วเพดานเท่าไร", context=context)
+
+    assert slots["fund"] is None
+
+
 @pytest.mark.parametrize("question", [
     "วันนี้อากาศเป็นยังไง",
     "ช่วยเขียนโค้ดให้หน่อย",

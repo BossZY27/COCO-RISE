@@ -456,7 +456,7 @@ def test_launcher_keeps_optional_ollama_from_becoming_a_startup_requirement():
 
 
 def test_demo_page_displays_only_the_complete_verified_answer():
-    assert "fetch('/v1/query'," in main.PAGE
+    assert "fetch('/api/query'," in main.PAGE
     assert "fetch('/v1/query/stream'," not in main.PAGE
     assert "const e = await res.json();" in main.PAGE
     assert "turn.answer = e.answer;" in main.PAGE
@@ -468,3 +468,26 @@ def test_demo_chat_keeps_history_inside_each_browser_conversation():
     assert "const personaId = chat.personaId" in main.PAGE
     assert "localStorage.setItem(STORAGE_KEY" in main.PAGE
     assert "chats.filter(c => c.id !== id)" in main.PAGE
+
+
+def test_demo_chat_keeps_resolved_context_in_each_conversation():
+    assert "context: chat.context" in main.PAGE
+    assert "chat.context =" in main.PAGE
+    assert "const chat = currentChat()" in main.PAGE
+
+
+def test_query_context_restores_only_the_chat_that_sends_it(monkeypatch):
+    monkeypatch.setattr(limits, "take_client", lambda _host: (True, 0))
+    monkeypatch.setattr(limits, "take", lambda _user: (True, 0))
+    client = TestClient(app)
+    base = {"question": "แล้วเพดานเท่าไร", "history": ["แล้วรายละเอียดล่ะ"] * 8}
+    context = {"fund": "ทุนวิจัยสถาบัน", "tier": None, "fiscal_year": 2568,
+               "year_assumed": False, "intent": "amount"}
+
+    remembered = client.post("/api/query", json={**base, "context": context})
+    fresh_chat = client.post("/api/query", json=base)
+
+    assert remembered.status_code == fresh_chat.status_code == 200
+    assert remembered.json()["slots"]["fund"] == "ทุนวิจัยสถาบัน"
+    assert remembered.json()["verify"]["ok"]
+    assert fresh_chat.json()["slots"]["fund"] is None

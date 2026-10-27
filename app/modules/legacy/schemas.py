@@ -13,6 +13,18 @@ HistoryTurn = Annotated[
 ]
 
 
+class SessionContext(BaseModel):
+    """The last resolved topic in one browser chat, never an authority for facts."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    fund: str = Field(min_length=1, max_length=160)
+    tier: str | None = Field(default=None, max_length=40)
+    fiscal_year: int = Field(ge=2500, le=2700)
+    year_assumed: bool = True
+    intent: str = Field(max_length=40)
+
+
 class Query(BaseModel):
     """ถามข้อมูลทุนในเดโม ใช้ persona_id สำหรับข้อมูลผู้ใช้สมมติเท่านั้น"""
 

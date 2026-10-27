@@ -36,6 +36,8 @@
 <div class="box">
   <h2>นำเข้า PDF เป็นฉบับร่าง</h2>
   <p class="lead">เก็บไฟล์ไว้ในพื้นที่กักกัน แล้วแบ่งหัวข้อและจัดประเภทเพื่อรอคนตรวจ ข้อมูลส่วนนี้ยังไม่ถูกค้น ไม่สร้างตัวเลขทุน และไม่เผยแพร่อัตโนมัติ</p>
+  <p class="lead"><strong>Update service:</strong> POST /api/update · OCR → normalize → extract → chunk → รอผู้ดูแลตรวจและเผยแพร่</p>
+  <p class="lead">เดโมนี้รับ PDF; การรับ HTML และข้อมูลจากแบบฟอร์มเป็นส่วนที่เสนอไว้ในเล่มสำหรับพัฒนาต่อ</p>
   <button id="ingestPdfButton" type="button" onclick="ingestUpload()">เก็บไฟล์และเตรียมข้อมูลรอตรวจ</button>
   <button type="button" onclick="loadIngestionDocuments()">ดูเอกสารที่นำเข้า</button>
   <div class="pdf-result" id="ingestionReport" aria-live="polite"></div>
@@ -128,7 +130,7 @@ async function ingestUpload() {
   button.disabled = true;
   say('รับไฟล์แล้ว กำลังเตรียมงานอ่านเอกสาร...');
   try {
-    const response = await fetch('/v1/admin/documents', {method: 'POST',
+    const response = await fetch('/api/update', {method: 'POST',
       headers: {'X-Admin-Token': tok(), 'X-Pdf-Name': encodeURIComponent(file.name),
                 'Content-Type': 'application/pdf'}, body: file});
     const accepted = await response.json();

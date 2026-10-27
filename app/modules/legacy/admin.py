@@ -92,7 +92,18 @@ async def admin_inspect_pdf(request: Request, x_admin_token: str | None = Header
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.post("/v1/admin/documents", status_code=202, response_model=IngestionAcceptedResponse)
+@router.post(
+    "/api/update",
+    status_code=202,
+    response_model=IngestionAcceptedResponse,
+    summary="Upload a PDF into the administrator review quarantine",
+)
+@router.post(
+    "/v1/admin/documents",
+    status_code=202,
+    response_model=IngestionAcceptedResponse,
+    summary="Upload a PDF into the administrator review quarantine (versioned path)",
+)
 async def admin_create_document(request: Request,
                                 x_admin_token: str | None = Header(default=None),
                                 x_pdf_name: str = Header(default="document.pdf")):
