@@ -147,12 +147,14 @@ async def security_headers(request: Request, call_next):
     headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
     headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    docs_assets = " https://cdn.jsdelivr.net" if request.url.path in ("/docs", "/redoc") else ""
     headers.setdefault(
         "Content-Security-Policy",
         "default-src 'self'; base-uri 'none'; object-src 'none'; "
         "frame-ancestors 'none'; form-action 'self'; connect-src 'self'; "
-        "img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https://fastapi.tiangolo.com; "
+        f"style-src 'self' 'unsafe-inline'{docs_assets}; "
+        f"script-src 'self' 'unsafe-inline'{docs_assets}",
     )
     if (request.url.path == "/v1/recent" or request.url.path == "/admin"
             or request.url.path.startswith("/v1/admin/")):

@@ -69,6 +69,28 @@ python reindex.py
 python -m uvicorn app.main:app --port 8077
 ```
 
+### Docker และ Swagger
+
+เปิดต้นแบบ JSON/in-memory พร้อม Ollama ด้วย Docker Compose:
+
+```bash
+docker compose up --build -d
+```
+
+ระบบตอบด้วย BM25/trigram ได้ทันที หากต้องการทดลอง BGE-M3 ให้ดาวน์โหลดโมเดลแล้วเปิดระบบใหม่:
+
+```bash
+docker compose --profile setup run --rm models
+docker compose restart api
+```
+
+- หน้าแชต: http://127.0.0.1:8077/
+- Swagger UI: http://127.0.0.1:8077/docs
+- OpenAPI JSON: http://127.0.0.1:8077/openapi.json
+- สถานะระบบ: http://127.0.0.1:8077/healthz
+
+ไฟล์ JSON และ embedding cache อยู่ใน volume `coco-rise_rise-data` ส่วนโมเดลอยู่ใน `coco-rise_ollama-models`
+
 `reindex.py` ฝังเวกเตอร์ทุกชิ้นครั้งเดียวแล้วเก็บลง `data/embeddings.json` รันซ้ำจะฝังเฉพาะชิ้นที่ข้อความเปลี่ยน คำสั่งนี้ต้องใช้ Ollama กับ `bge-m3`; การตอบแบบ trigram ไม่ต้องใช้ไฟล์เวกเตอร์ ไฟล์ embeddings เป็น derived cache หากเสียหรือรูปแบบผิด ระบบจะสร้างใหม่ การเขียนแต่ละ batch ใช้ไฟล์ชั่วคราวแล้วแทนที่แบบ atomic ตรวจจำนวน ค่า และมิติของเวกเตอร์ก่อนรับ และลบรายการของ chunk ที่ไม่มีอยู่แล้วออกจาก cache
 เมื่อเปิดเซิร์ฟเวอร์ การเตรียม vector cache ทำใน background และไม่บล็อก startup ระหว่างนั้นคำถามใช้ keyword, trigram และ structured lookup ได้ตามปกติ
 
