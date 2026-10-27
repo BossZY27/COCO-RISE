@@ -49,7 +49,7 @@ class RuntimeContext:
             return
         token = runtime_services.set(runtime)
         try:
-            if scope["path"].startswith("/v1/") or scope["path"] == "/healthz":
+            if scope["path"].startswith("/v1/") or scope["path"] in {"/healthz", "/api/query"}:
                 try:
                     corpus = await asyncio.to_thread(runtime.corpora.load)
                 except SQLAlchemyError:
