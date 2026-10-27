@@ -8,18 +8,20 @@ x-app: &app
     RISE_EMBED_MODEL: ${RISE_EMBED_MODEL:-bge-m3}
     RISE_ADMIN_TOKEN: ${RISE_ADMIN_TOKEN:-}
     RISE_FILES_DIR: /srv/rise/data/private
+    RISE_CHROMA_DIR: /srv/rise/data/chroma_db
     RISE_SOURCE_DIR: /srv/rise/funds-data
     RISE_TRUSTED_HOSTS: localhost,127.0.0.1,api,testserver
     RISE_LLM_TIMEOUT: 30
     RISE_AUDIT: off
   volumes:
     - pdfs:/srv/rise/data/private
+    - chroma:/srv/rise/data/chroma_db
   depends_on:
     postgres:
       condition: service_healthy
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    image: postgres:17
     environment:
       POSTGRES_USER: rise
       POSTGRES_PASSWORD: ${RISE_POSTGRES_PASSWORD:-rise-local-only}
@@ -78,4 +80,5 @@ services:
 volumes:
   postgres:
   pdfs:
+  chroma:
   models:

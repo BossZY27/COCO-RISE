@@ -353,6 +353,7 @@ def test_database_inspector_and_sqlite_tables_match_architecture():
     page = client.get("/db")
     assert page.status_code == 200
     assert "COCO-RISE Database Inspector" in page.text
+    assert "ChromaDB" in page.text
 
     res = client.get("/v1/db/overview?table=fund_facts&only_verified=1")
     assert res.status_code == 200
@@ -363,5 +364,47 @@ def test_database_inspector_and_sqlite_tables_match_architecture():
     assert body["counts"]["eligibility_rules"] >= 4
     assert body["counts"]["eval_dataset"] > 0
     assert body["counts"]["applicant_profiles"] >= 5
-    assert "CREATE EXTENSION IF NOT EXISTS vector;" in body["postgres_schema"]
+    assert "ChromaDB" in body["engine"]
+    assert body["vector_db"]["collection"] == "coco_rise_chunks"
+    assert "chroma_id" in body["postgres_schema"]
     assert all(r["verified"] == 1 for r in body["rows"])
+
+
+def test_chromadb_vector_store_sync_and_cosine_search(tmp_path):
+    from app.infrastructure.chroma import vectors as chroma_vectors
+
+    sample_chunks = [
+        {
+            "id": "ch_1",
+            "doc": "หลักเกณฑ์กลาง",
+            "fiscal_year": None,
+            "clause": "ข้อ 4.1",
+            "page": 2,
+            "text": "ทุนวิจัยสถาบัน เพดานไม่เกิน 25,000 บาท",
+            "status": "active",
+            "verified": True,
+        },
+        {
+            "id": "ch_2",
+            "doc": "หลักเกณฑ์กลาง",
+            "fiscal_year": None,
+            "clause": "ข้อ 4.2",
+            "page": 3,
+            "text": "ทุนวิจัยในชั้นเรียน เพดานไม่เกิน 15,000 บาท",
+            "status": "active",
+            "verified": True,
+        },
+    ]
+    vecs = {
+        "ch_1": [1.0, 0.0, 0.0, 0.0],
+        "ch_2": [0.0, 1.0, 0.0, 0.0],
+    }
+    chroma_dir = tmp_path / "chroma_test"
+    count = chroma_vectors.sync_corpus_chunks(sample_chunks, vecs, "bge-m3:latest", chroma_dir=chroma_dir)
+    assert count == 2
+
+    chunks_by_id = {c["id"]: c for c in sample_chunks}
+    hits = chroma_vectors.search_corpus_chunks([0.99, 0.01, 0.0, 0.0], chunks_by_id, top_k=2, chroma_dir=chroma_dir)
+    assert hits is not None and len(hits) == 2
+    assert hits[0][1]["id"] == "ch_1"
+    assert hits[0][0] > 0.95

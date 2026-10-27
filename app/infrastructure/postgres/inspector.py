@@ -1,13 +1,14 @@
-"""Relational SQLite database (data/coco_rise.db) mirroring the PostgreSQL + pgvector schema.
+"""Relational SQL database (data/coco_rise.db / PostgreSQL) + ChromaDB Vector Store (data/chroma_db).
 
-Aligns the running demo with the 4-layer dataset in IRFA-สถาปัตยกรรมระบบ.png and
+Aligns the running system with the 4-layer dataset in IRFA-สถาปัตยกรรมระบบ.png and
 Section 4.4 / 5.2 of the thesis proposal:
-  - Layer 1: document_registry   (ทะเบียนเอกสารต้นฉบับ Metadata)
-  - Layer 2: document_chunks     (ข้อความที่ตรวจแล้ว + BM25 + Vector Index bge-m3)
-  - Layer 3: fund_facts          (ข้อเท็จจริงวงเงินแยกประเภท ceiling vs allocated)
-             eligibility_rules   (กฎคุณสมบัติและเงื่อนไขข้ามทุน)
-  - Layer 4: eval_dataset        (ชุดคำถามทดสอบและคำตอบอ้างอิง)
-  - Profiles: applicant_profiles (โปรไฟล์ผู้ขอทุน ปกปิดข้อมูลส่วนบุคคลตามหลัก PDPA)
+  - Layer 1 (PostgreSQL): document_registry   (ทะเบียนเอกสารต้นฉบับ Metadata)
+  - Layer 2 (PostgreSQL + ChromaDB):
+      document_chunks (ข้อความที่ตรวจแล้ว + BM25) + ChromaDB collection 'coco_rise_chunks' (bge-m3 1,024 มิติ)
+  - Layer 3 (PostgreSQL): fund_facts          (ข้อเท็จจริงวงเงินแยกประเภท ceiling vs allocated)
+                          eligibility_rules   (กฎคุณสมบัติและเงื่อนไขข้ามทุน)
+  - Layer 4 (PostgreSQL): eval_dataset        (ชุดคำถามทดสอบและคำตอบอ้างอิง)
+  - Profiles (PostgreSQL): applicant_profiles (โปรไฟล์ผู้ขอทุน ปกปิดข้อมูลส่วนบุคคลตามหลัก PDPA)
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ import sqlite3
 import threading
 from pathlib import Path
 
+from app.infrastructure.chroma import vectors as chroma_vectors
 from app.modules.knowledge import corpus as store
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -41,8 +43,28 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
+def _load_embedding_vectors() -> tuple[str, dict[str, list[float]]]:
+    embed_model = "bge-m3:latest"
+    embed_vectors: dict[str, list[float]] = {}
+    if store.EMBEDDINGS.exists():
+        try:
+            raw_emb = json.loads(store.EMBEDDINGS.read_text(encoding="utf-8"))
+            if isinstance(raw_emb, dict):
+                embed_model = str(raw_emb.get("model") or embed_model)
+                items = raw_emb.get("items")
+                if isinstance(items, dict):
+                    for cid, entry in items.items():
+                        if isinstance(entry, dict) and isinstance(entry.get("vec"), list):
+                            embed_vectors[cid] = entry["vec"]
+                elif isinstance(raw_emb.get("vectors"), dict):
+                    embed_vectors = raw_emb["vectors"]
+        except Exception:
+            embed_vectors = {}
+    return embed_model, embed_vectors
+
+
 def sync_database(force: bool = False) -> Path:
-    """Create and populate data/coco_rise.db from the canonical project datasets."""
+    """Create and populate data/coco_rise.db and sync vectors to ChromaDB (data/chroma_db)."""
     global _SYNCED
     with _DB_LOCK:
         if _SYNCED and not force and DB_PATH.exists():
@@ -53,6 +75,7 @@ def sync_database(force: bool = False) -> Path:
             cur = conn.cursor()
             cur.executescript(
                 """
+                DROP TABLE IF EXISTS document_chunks;
                 CREATE TABLE IF NOT EXISTS document_registry (
                     doc_id TEXT PRIMARY KEY,
                     doc_name TEXT NOT NULL,
@@ -74,6 +97,7 @@ def sync_database(force: bool = False) -> Path:
                     text TEXT NOT NULL,
                     status TEXT NOT NULL,
                     verified INTEGER NOT NULL,
+                    chroma_id TEXT NULL,
                     vector_model TEXT NULL,
                     vector_dim INTEGER NOT NULL
                 );
@@ -130,17 +154,12 @@ def sync_database(force: bool = False) -> Path:
                 """
             )
 
-            # Load embeddings metadata
-            embed_vectors: dict = {}
-            embed_model = "bge-m3:latest"
-            if store.EMBEDDINGS.exists():
+            embed_model, embed_vectors = _load_embedding_vectors()
+            if embed_vectors:
                 try:
-                    raw_emb = json.loads(store.EMBEDDINGS.read_text(encoding="utf-8"))
-                    if isinstance(raw_emb, dict):
-                        embed_model = str(raw_emb.get("model") or embed_model)
-                        embed_vectors = raw_emb.get("vectors") or {}
+                    chroma_vectors.sync_corpus_chunks(list(store.CHUNKS), embed_vectors, embed_model)
                 except Exception:
-                    embed_vectors = {}
+                    pass
 
             # 1. Populate document_chunks
             for chunk in store.CHUNKS:
@@ -150,8 +169,8 @@ def sync_database(force: bool = False) -> Path:
                 cur.execute(
                     """
                     INSERT OR REPLACE INTO document_chunks
-                    (id, doc, fiscal_year, section, clause, page, text, status, verified, vector_model, vector_dim)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, doc, fiscal_year, section, clause, page, text, status, verified, chroma_id, vector_model, vector_dim)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         cid,
@@ -163,6 +182,7 @@ def sync_database(force: bool = False) -> Path:
                         str(chunk.get("text") or ""),
                         str(chunk.get("status") or "active"),
                         1 if store.is_verified(chunk) else 0,
+                        cid if v_dim > 0 else None,
                         embed_model if v_dim > 0 else None,
                         v_dim,
                     ),
@@ -300,7 +320,7 @@ def sync_database(force: bool = False) -> Path:
 
 
 def get_overview(table: str = "document_registry", only_verified: bool = False, q: str = "") -> dict:
-    """Return database summary counts, rows for the selected table, and the PostgreSQL DDL."""
+    """Return database summary counts, ChromaDB stats, rows for the selected table, and PostgreSQL DDL."""
     sync_database()
     chosen = table if table in ALLOWED_TABLES else "document_registry"
     conn = _connect()
@@ -346,17 +366,20 @@ def get_overview(table: str = "document_registry", only_verified: bool = False, 
     finally:
         conn.close()
 
+    chroma_info = chroma_vectors.collection_stats()
     pg_schema = SCHEMA_SQL_PATH.read_text(encoding="utf-8") if SCHEMA_SQL_PATH.exists() else ""
     return {
-        "engine": "SQLite 3 (data/coco_rise.db) + PostgreSQL/pgvector Schema",
+        "engine": "PostgreSQL / SQLite (data/coco_rise.db) + ChromaDB (data/chroma_db)",
         "db_file": "data/coco_rise.db",
+        "vector_db": chroma_info,
         "selected_table": chosen,
         "counts": counts,
         "stats": {
             "verified_chunks": verified_chunks,
             "verified_facts": verified_facts,
-            "vector_chunks": vector_chunks,
-            "vector_model": "bge-m3:latest (1024 มิติ)",
+            "vector_chunks": chroma_info["vector_count"] or vector_chunks,
+            "vector_model": "bge-m3:latest (1024 มิติ · ChromaDB)",
+            "chroma_collection": chroma_info["collection"],
         },
         "rows": rows,
         "postgres_schema": pg_schema,

@@ -17,7 +17,8 @@ app/
 │   ├── feedback/                   v2 feedback API
 │   └── system/                     readiness and dependency status
 ├── infrastructure/
-│   ├── postgres/                   SQLAlchemy, repositories, 4-layer DB inspector, schema DDL and pgvector
+│   ├── postgres/                   SQLAlchemy, repositories, 4-layer DB inspector and relational schema DDL
+│   ├── chroma/                     ChromaDB persistent vector store (bge-m3 1,024-dim HNSW cosine index)
 │   ├── ollama/                     bounded model clients and v1 compatibility
 │   ├── files/                      private PDF storage and extraction
 │   └── json/                       append-only compatibility audit adapter

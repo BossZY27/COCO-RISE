@@ -260,6 +260,12 @@ def build_embeddings(force: bool = False, progress=None) -> dict:
             if progress:
                 progress(min(start + len(batch), len(missing)), len(missing))
         _VECTORS = {chunk["id"]: cache["items"][chunk["id"]]["vec"] for chunk in view().CHUNKS}
+        if EMBEDDINGS == DATA / "embeddings.json":
+            try:
+                from app.infrastructure.chroma import vectors as chroma_vectors
+                chroma_vectors.sync_corpus_chunks(list(view().CHUNKS), _VECTORS, str(cache["model"]))
+            except Exception:
+                pass
         return {"model": cache["model"], "chunks": len(_VECTORS), "embedded_now": len(missing)}
 
 
@@ -278,6 +284,20 @@ def vector_search(query_vector: list[float], fiscal_year: int | None, top_k: int
     dimension = _vector_dimension(stored)
     if dimension is None or len(query_vector) != dimension:
         raise ValueError("Query embedding dimension does not match the vector index dimension")
+    if EMBEDDINGS == DATA / "embeddings.json" and dimension == 1024:
+        try:
+            from app.infrastructure.chroma import vectors as chroma_vectors
+            chunks_by_id = {c["id"]: c for c in view().CHUNKS if _VECTORS.get(c["id"])}
+            chroma_scored = chroma_vectors.search_corpus_chunks(
+                query_vector, chunks_by_id, top_k=max(top_k * 2, 12)
+            )
+            if chroma_scored is not None:
+                return [
+                    chunk for score, chunk in chroma_scored
+                    if score > 0.35 and _passes_filter(chunk, fiscal_year)
+                ][:top_k]
+        except Exception:
+            pass
     norm = math.sqrt(sum(v * v for v in query_vector)) or 1.0
     scored = []
     for chunk in view().CHUNKS:
