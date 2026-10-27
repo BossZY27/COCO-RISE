@@ -49,6 +49,17 @@ def test_named_third_person_eligibility_does_not_use_the_selected_demo_persona()
     assert "คุณยังไม่เข้าเกณฑ์" not in ordinary_profile["answer"]
 
 
+@pytest.mark.parametrize("persona", ["P1", "P6"])
+def test_demo_persona_rule_result_is_not_presented_as_the_real_users_eligibility(persona):
+    result = ask("ฉันขอเงินรางวัลการตีพิมพ์ ผู้ประพันธ์บรรณกิจ ได้ไหม", persona)
+
+    assert result["ruling"]["verdict"] in ("eligible", "not_eligible")
+    assert "โปรไฟล์สมมติ" in result["answer"]
+    assert "ตามข้อมูลผู้ใช้ที่ระบบมี" not in result["answer"]
+    assert "คุณเข้าเกณฑ์" not in result["answer"]
+    assert "คุณยังไม่เข้าเกณฑ์" not in result["answer"]
+
+
 @pytest.mark.parametrize("question", [
     "คนนอกขอทุนวิจัยสถาบันได้กี่บาท",
     "ผมเป็นคนนอก ขอทุนวิจัยสถาบันได้กี่บาท",
@@ -77,6 +88,14 @@ def test_role_words_inside_a_fund_name_still_refer_to_the_asker(fund):
     assert result["slots"]["about_asker"] is True
     assert result["ruling"]["verdict"] != "not_evaluated"
     assert "แทนบุคคลอื่น" not in result["answer"]
+
+
+def test_unreviewed_fund_does_not_present_demo_persona_as_real_user():
+    result = ask("ฉันขอทุนวิจัยสถาบันได้ไหม", "P1")
+
+    assert result["ruling"]["verdict"] == "no_rule"
+    assert "โปรไฟล์สมมติ" in result["answer"]
+    assert "คุณอยู่ในกลุ่มผู้ขอรับทุน" not in result["answer"]
 
 
 def test_verifier_rejects_an_unsupported_qualitative_condition():

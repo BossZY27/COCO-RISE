@@ -13,8 +13,20 @@ HistoryTurn = Annotated[
 ]
 
 
+class SessionContext(BaseModel):
+    """The last resolved topic in one browser chat, never an authority for facts."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    fund: str = Field(min_length=1, max_length=160)
+    tier: str | None = Field(default=None, max_length=40)
+    fiscal_year: int = Field(ge=2500, le=2700)
+    year_assumed: bool = True
+    intent: str = Field(max_length=40)
+
+
 class Query(BaseModel):
-    """A bounded question request, validated before it reaches retrieval or the LLM."""
+    """A bounded question request, validated before it reaches retrieval."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -24,6 +36,7 @@ class Query(BaseModel):
         default_factory=list,
         max_length=limits.MAX_HISTORY_TURNS,
     )
+    context: SessionContext | None = None
     model: str | None = Field(default=None, min_length=1, max_length=200)
 
 

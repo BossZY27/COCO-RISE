@@ -183,7 +183,10 @@ def compose_answer(slots: dict, evidence: dict, ruling: dict,
                 "ลองระบุว่าอยากทราบเพดาน วงเงินปีงบประมาณ เงื่อนไข หรือวิธีสมัคร"), [], []
     if slots["intent"] == "eligibility" and ruling["verdict"] == "no_rule":
         status = answers.applicant_status(profile)
-        known = f" ข้อที่ยืนยันได้ตอนนี้คือ{status[1].replace('ตามข้อมูลที่ระบบมี', '', 1)}" if status else ""
+        known = (" เมื่อเทียบเฉพาะนิยามผู้ขอรับทุน โปรไฟล์สมมติที่เลือกอยู่ในกลุ่มผู้ขอรับทุน"
+                 if status and status[0] else
+                 " เมื่อเทียบเฉพาะนิยามผู้ขอรับทุน โปรไฟล์สมมติที่เลือกไม่อยู่ในกลุ่มผู้ขอรับทุน"
+                 if status else "")
         definition = answers.who_may_apply("ฉันขอทุนได้ไหม", profile)
         definition_citations = definition[1] if status and definition else []
         if evidence.get("pending_review"):
@@ -250,14 +253,13 @@ def compose_answer(slots: dict, evidence: dict, ruling: dict,
             parts.append(f"ตัวเลขนี้เป็นวงเงินที่จัดสรรจริงของปีงบ {fact['fiscal_year']} "
                          f"ไม่ใช่เพดาน {_baht(ceiling[0]['amount'])} บาทตามหลักเกณฑ์กลาง")
     if ruling["verdict"] == "eligible":
-        parts.append(f"ตามข้อมูลผู้ใช้ที่ระบบมี คุณเข้าเกณฑ์ขอทุนนี้ในปีงบ {slots['fiscal_year']}")
+        parts.append(f"ผลทดสอบกฎกับโปรไฟล์สมมติที่เลือก: เข้าเกณฑ์เบื้องต้นในปีงบ {slots['fiscal_year']}")
     elif ruling["verdict"] == "not_eligible":
-        parts.append(f"ตามข้อมูลผู้ใช้ที่ระบบมี คุณยังไม่เข้าเกณฑ์ เพราะ{ruling['reason']}")
+        parts.append(f"ผลทดสอบกฎกับโปรไฟล์สมมติที่เลือก: ไม่เข้าเกณฑ์เบื้องต้น เพราะ{ruling['reason']}")
     elif ruling["verdict"] == "unknown":
-        parts.append("ระบบยังไม่มีข้อมูลประเภทบุคลากรและสังกัดของคุณ จึงยังสรุปสิทธิ์ไม่ได้ "
-                     "ถ้าคุณเป็นบุคลากรสังกัดวิทยาลัยการคอมพิวเตอร์และยังไม่ได้รับทุนนี้ในปีนี้ ก็เข้าเกณฑ์ตามประกาศ")
+        parts.append("โปรไฟล์สมมติที่เลือกยังไม่มีข้อมูลประเภทบุคลากรและสังกัด จึงยังสรุปผลทดสอบกฎไม่ได้")
     if ruling["verdict"] in ("eligible", "not_eligible", "unknown"):
-        parts.append("ผลสุดท้ายต้องให้เจ้าหน้าที่กองทุนยืนยันอีกครั้ง")
+        parts.append("ผลทดสอบนี้ไม่ใช่การตรวจสิทธิ์บุคคลจริง ต้องให้เจ้าหน้าที่กองทุนตรวจข้อมูลและประกาศอีกครั้ง")
     if slots["year_assumed"] and fact["amount_type"] == "allocated":
         parts.append(f"คำถามไม่ได้ระบุปี ระบบจึงตอบของปีงบประมาณ {slots['fiscal_year']} เป็นค่าเริ่มต้น")
     if evidence.get("ceiling_fallback"):       # last, so the rate note stays next to the figures it qualifies

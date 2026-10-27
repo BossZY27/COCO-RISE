@@ -527,13 +527,26 @@ def _document_reviewed(doc: str) -> bool:
     return bool(chunks) and all(c["status"] == "active" and is_verified(c) for c in chunks)
 
 
-def rrf(ranked_lists: list[list[dict]], k: int = 60, top_k: int = 5) -> list[dict]:
+def rrf(ranked_lists: list[list[dict]], k: int = 60, top_k: int = 5,
+        weights: tuple[float, ...] | None = None) -> list[dict]:
     """Reciprocal rank fusion: merge lists that have incomparable scores."""
+    if weights is not None and (len(weights) != len(ranked_lists) or any(w <= 0 for w in weights)):
+        raise ValueError("RRF weights must match the rankings and be positive")
     score: dict[str, float] = {}
     seen: dict[str, dict] = {}
-    for hits in ranked_lists:
+    for weight, hits in zip(weights or (1.0,) * len(ranked_lists), ranked_lists):
         for rank, hit in enumerate(hits, start=1):
-            score[hit["id"]] = score.get(hit["id"], 0.0) + 1.0 / (k + rank)
+            score[hit["id"]] = score.get(hit["id"], 0.0) + weight / (k + rank)
             seen[hit["id"]] = hit
     best = sorted(score, key=lambda i: score[i], reverse=True)[:top_k]
     return [seen[i] for i in best]
+
+
+def semantic_guarded_rrf(keyword: list[dict], semantic: list[dict], hierarchy: list[dict],
+                         top_k: int = 5) -> list[dict]:
+    """Keep the strongest vector evidence, then fill remaining slots by hybrid RRF."""
+    primary = semantic[:min(3, top_k)]
+    primary_ids = {row["id"] for row in primary}
+    fused = rrf([keyword, semantic, hierarchy],
+                top_k=sum(len(hits) for hits in (keyword, semantic, hierarchy)))
+    return primary + [row for row in fused if row["id"] not in primary_ids][:top_k - len(primary)]

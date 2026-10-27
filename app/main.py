@@ -132,6 +132,7 @@ app.add_middleware(
     path_limits={
         "/v1/admin/inspect-pdf": pdf_inspection.MAX_BYTES,
         "/v1/admin/documents": ingestion.MAX_BYTES,
+        "/api/update": ingestion.MAX_BYTES,
     },
 )
 
@@ -155,6 +156,7 @@ async def security_headers(request: Request, call_next):
         "script-src 'self' 'unsafe-inline'",
     )
     if (request.url.path == "/v1/recent" or request.url.path == "/admin"
+            or request.url.path == "/api/update"
             or request.url.path.startswith("/v1/admin/")):
         headers["Cache-Control"] = "no-store, private"
     return response
@@ -251,7 +253,8 @@ def personas():
     return list(store.PERSONAS.values())
 
 
-@app.post("/v1/query")
+@app.post("/api/query", summary="Ask a verified research-fund question")
+@app.post("/v1/query", summary="Ask a verified research-fund question (versioned path)")
 async def query(
     body: Query, request: Request,
     x_user_id: str | None = Header(default=None, max_length=128),
@@ -259,7 +262,8 @@ async def query(
     # The proxy sets X-User-Id after it checks the session. The body field is only for the demo page.
     remote = request.client.host if request.client else "anonymous"
     user_id, question, history = _accept(body, x_user_id, remote)
-    result = await pipeline.run(question, user_id, history, _selected_model(body.model))
+    result = await pipeline.run(question, user_id, history, _selected_model(body.model),
+                                body.context.model_dump() if body.context else None)
     audit.record({**result, "question": question}, user_id)
     return result
 
@@ -274,7 +278,8 @@ async def query_stream(
     model = _selected_model(body.model)
 
     async def events():
-        async for event in pipeline.run_stream(question, user_id, history, model):
+        async for event in pipeline.run_stream(
+                question, user_id, history, model, body.context.model_dump() if body.context else None):
             if event.get("type") == "done":
                 audit.record({**event, "question": question}, user_id)
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"

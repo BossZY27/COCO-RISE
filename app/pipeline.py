@@ -82,7 +82,7 @@ APPLICATION_RE = re.compile(
 )
 PREREQUISITE_WORDS = ("ต้องเคย", "จำเป็นต้องเคย", "ก่อนถึงจะขอ", "ก่อนจึงจะขอ")
 # "มีทุนอะไรบ้าง" is the first question anyone asks, and the catalogue answers it from rows we trust
-LIST_WORDS = ("มีทุนอะไร", "ทุนอะไรบ้าง", "มีทุนกี่", "ทุนมีกี่", "ทุนทั้งหมด", "รายการทุน",
+LIST_WORDS = ("มีทุนอะไร", "มีทุนไรบ้าง", "ทุนไรบ้าง", "ทุนอะไรบ้าง", "มีทุนกี่", "ทุนมีกี่", "ทุนทั้งหมด", "รายการทุน",
               "ทุนมีอะไร", "มีกองทุนอะไร", "ทุนไหนบ้าง", "ทุนตัวไหนบ้าง", "ทุนตัวใดบ้าง",
               "ทุนมีตัวไหนบ้าง", "ทุนแต่ละตัวคืออะไร", "ทุนเเต่ละตัวคืออะไร")
 RECOMMENDATION_WORDS = ("แนะนำ", "ช่วยเลือก", "ช่วยคัด", "เหมาะกับ", "เข้ากับ", "ควรขอ", "ควรสมัคร")
@@ -90,7 +90,7 @@ CURRENT_OPEN_WORDS = ("เปิดตอนนี้", "เปิดอยู�
 # "ทุนนี้" points back at the previous turn, so the current question names no fund of its own
 ANAPHORA = ("ทุนนี้", "ทุนวิจัยนี้", "ทุนดังกล่าว", "ทุนนั้น", "ทุนตัวนี้",
            "มันคือทุน", "มันคืออะไร", "อันนี้คือทุน", "อันนี้คืออะไร")
-CLAUSE_REFERENCE_RE = re.compile(r"ข้อ\s*([12]\.\d{1,2})(?![\d.])")
+CLAUSE_REFERENCE_RE = re.compile(r"ข้อ\s*(?:ที่\s*)?([12]\.\d{1,2})(?![\d.])")
 
 
 def _wants_catalogue_details(question: str, catalogue_context: bool, mentioned: list[dict]) -> bool:
@@ -186,9 +186,11 @@ def _conflicting_clause(question: str, mentioned: list[dict]) -> dict | None:
     return {"clause_row": by_clause, "name_row": by_name}
 
 
-def _explicit_annex_fund(question: str, mentioned: list[dict]) -> str | None:
-    """Resolve a clause only when the question names the reviewed central annex."""
-    if mentioned or not any(word in question for word in ("หลักเกณฑ์กลาง", "บัญชีแนบท้าย")):
+def _explicit_annex_fund(question: str, mentioned: list[dict],
+                         catalogue_context: bool = False) -> str | None:
+    """Resolve a clause only with an explicit or conversation-established central annex."""
+    if mentioned or not (catalogue_context or any(
+            word in question for word in ("หลักเกณฑ์กลาง", "บัญชีแนบท้าย"))):
         return None
     clauses = CLAUSE_REFERENCE_RE.findall(question)
     if len(clauses) != 1:
@@ -197,7 +199,8 @@ def _explicit_annex_fund(question: str, mentioned: list[dict]) -> str | None:
     return matches[0]["fund"] if len(matches) == 1 else None
 
 
-def analyze(question: str, history: list[str] | None = None, profile: dict | None = None) -> dict:
+def analyze(question: str, history: list[str] | None = None, profile: dict | None = None,
+            context: dict | None = None) -> dict:
     """Fill the slots the rest of the pipeline needs.
 
     A follow-up such as "แล้วชั้นกลางล่ะ" only makes sense with the previous turn, so missing slots fall back
@@ -207,6 +210,8 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
     question = understand.normalize(question)
     history = [understand.normalize(turn) for turn in history or []]
     previous = history[-1] if history else ""
+    context = context if isinstance(context, dict) else {}
+    context_fund = context.get("fund") if context.get("fund") in store.FUNDS else None
     # "ทุนนี้" says "the grant we were just talking about", so the name comes from the conversation
     # and never from a fuzzy guess. Remember that it was asked, because a question pointing back at
     # nothing needs a different answer from a question that simply named no fund.
@@ -261,6 +266,7 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         or any(word in question for word in (
             "ขอได้เท่าไร", "ได้เท่าไร", "กี่บาท", "กี่ทุน", "วงเงิน", "เพดาน", "ทุนละ",
             "ปีหน้า", "ปีนี้", "ปีที่แล้ว", "เงื่อนไข", "แต่ละชั้น", "แต่ละระดับ",
+            "ใครขอได้", "ใครมีสิทธิ์", "ใครมีสิทธิ",
         ))
     )
     personal_history = (bool(PERSONAL_HISTORY_RE.search(question))
@@ -282,7 +288,7 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         fund, confidence, alternatives = None, 0.0, []
     else:
         fund, confidence, alternatives = _find_fund(question)
-        annex_fund = _explicit_annex_fund(question, mentioned)
+        annex_fund = _explicit_annex_fund(question, mentioned, bool(catalogue_context))
         if annex_fund:
             fund, confidence, alternatives = annex_fund, 1.0, []
         if prerequisite and named:
@@ -309,12 +315,26 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         annex_fund = _explicit_annex_fund(earlier, understand.mentions(earlier))
         if annex_fund:
             fund, confidence, alternatives = annex_fund, 1.0, []
+    used_context = bool(context_fund and not from_current and constrained_followup
+                        and not broad_eligibility and not personal_history and not recommendation_request
+                        and not clause_conflict and not CLAUSE_REFERENCE_RE.search(question))
+    if used_context:
+        fund, confidence, alternatives = context_fund, 1.0, []
     chatter = None if from_current else understand.small_talk(question)
     topic = "" if from_current else understand.topic_of(question)
     if chatter or topic:        # "ขอบคุณครับ" after a grant question is not another question about it
         fund, confidence, alternatives = None, 0.0, []
-    tier = _find_tier(question) or (_find_tier(previous) if previous else None)
-    fiscal_year, assumed = _fiscal_year(question, previous)
+        used_context = False
+    context_tier = context.get("tier")
+    if context_tier not in store.TIERS and context_tier not in store.TIER_ALIAS.values():
+        context_tier = None
+    tier = _find_tier(question) or (context_tier if used_context else
+                                  _find_tier(previous) if previous and not from_current else None)
+    fiscal_year, assumed = _fiscal_year(question, "" if used_context else previous)
+    context_year = context.get("fiscal_year")
+    if (used_context and assumed and context.get("year_assumed") is False
+            and type(context_year) is int and 2500 <= context_year <= 2700):
+        fiscal_year, assumed = context_year, False
     ranking = understand.wants_ranking(question) if fund is None else None
     if clause_conflict:
         intent = "clarify_reference"
@@ -372,6 +392,9 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
         previous_intent = analyze(previous, history[:-1], profile)["intent"]
         if previous_intent in ("amount", "ceiling", "tiers", "details", "definition", "eligibility", "application"):
             intent = previous_intent
+    if intent == "unknown" and used_context and context.get("intent") in (
+            "amount", "ceiling", "tiers", "details", "definition", "eligibility", "application"):
+        intent = context["intent"]
     rewritten = question if from_current else " ".join(x for x in (fund, tier, question) if x)
     slots = {"standalone_question": rewritten.strip(), "fund": fund, "tier": tier, "fiscal_year": fiscal_year,
              "year_assumed": assumed, "intent": intent, "confidence": round(confidence, 2), "method": "rules",
@@ -398,12 +421,12 @@ def _semantic(query: str, year: int | None) -> tuple[list[dict], str]:
             if time.monotonic() >= _SEMANTIC_FAILURE_UNTIL:
                 try:
                     vector = llm.embed([query], timeout=SEMANTIC_QUERY_TIMEOUT)[0]
-                    hits = store.vector_search(vector, year)
+                    hits = store.vector_search(vector, year, 10)
                     _SEMANTIC_FAILURE_UNTIL = 0.0
                     return hits, llm.EMBED_MODEL
                 except Exception:
                     _SEMANTIC_FAILURE_UNTIL = time.monotonic() + SEMANTIC_RETRY_SECONDS
-    return store.semantic_search(query, year), "trigram"
+    return store.semantic_search(query, year, 10), "trigram"
 
 
 def semantic_backend() -> str:
@@ -424,9 +447,9 @@ async def retrieve(slots: dict) -> dict:
                 "keyword_ids": [], "semantic_ids": []}
     amount_type = "ceiling" if slots["intent"] == "ceiling" else "allocated"
     keyword, (semantic, how), hierarchy, facts = await asyncio.gather(
-        asyncio.to_thread(store.keyword_search, query, year),
+        asyncio.to_thread(store.keyword_search, query, year, 10),
         asyncio.to_thread(_semantic, query, year),
-        asyncio.to_thread(store.hierarchical_search, query, year),
+        asyncio.to_thread(store.hierarchical_search, query, year, 10),
         asyncio.to_thread(store.fact_lookup, slots["fund"], slots["tier"], year, amount_type),
     )
     # OCR-derived structured rows are just as untrusted as draft passages. Keep them visible
@@ -441,7 +464,9 @@ async def retrieve(slots: dict) -> dict:
         pending_review = pending_review or any(not store.is_verified(f) for f in ceiling_rows)
         facts = [f for f in ceiling_rows if store.is_verified(f)]
         fell_back = bool(facts)
-    return {"chunks": store.rrf([keyword, semantic, hierarchy]), "facts": facts, "semantic_by": how,
+    return {"chunks": (store.semantic_guarded_rrf(keyword, semantic, hierarchy)
+                       if how == llm.EMBED_MODEL else store.rrf([keyword, semantic, hierarchy])),
+            "facts": facts, "semantic_by": how,
             "ceiling_fallback": fell_back, "pending_review": pending_review,
             "keyword_ids": [c["id"] for c in keyword], "semantic_ids": [c["id"] for c in semantic]}
 
@@ -592,12 +617,13 @@ def _queue_wait(times: dict):
         times["llm_wait"] = waited
 
 
-async def _prepare(question: str, persona_id: str, history: list[str] | None, times: dict):
+async def _prepare(question: str, persona_id: str, history: list[str] | None, times: dict,
+                   context: dict | None = None):
     """Steps 1 to 3: everything that happens before the model starts writing."""
     # An unknown asker still gets an answer, but the eligibility line says the system cannot judge yet.
     profile = identity.lookup(persona_id) or store.PERSONAS["P5"]
     with _stage(times, "analyze"):
-        slots = analyze(question, history, profile)
+        slots = analyze(question, history, profile, context)
     with _stage(times, "retrieve"):
         evidence = await retrieve(slots)
     with _stage(times, "rules"):
@@ -625,10 +651,11 @@ def _model_may_rephrase(used: list[dict], evidence: dict, slots: dict | None = N
 
 
 async def run(question: str, persona_id: str = "P1", history: list[str] | None = None,
-              model: str | None = None) -> dict:
+              model: str | None = None, context: dict | None = None) -> dict:
     times: dict[str, float] = {}
     selected_model = None
-    profile, slots, evidence, ruling, answer, citations, used = await _prepare(question, persona_id, history, times)
+    profile, slots, evidence, ruling, answer, citations, used = await _prepare(
+        question, persona_id, history, times, context)
     source = "template"
     if _model_may_rephrase(used, evidence, slots):
         with _queue_wait(times):
@@ -678,14 +705,15 @@ async def _to_async(make_generator):
 
 
 async def run_stream(question: str, persona_id: str = "P1", history: list[str] | None = None,
-                     model: str | None = None):
+                     model: str | None = None, context: dict | None = None):
     """Send a verified template immediately, then a verified final answer after model generation.
 
     Raw model tokens must never reach the client before the final gate has checked them.
     """
     times: dict[str, float] = {}
     selected_model = None
-    profile, slots, evidence, ruling, template, citations, used = await _prepare(question, persona_id, history, times)
+    profile, slots, evidence, ruling, template, citations, used = await _prepare(
+        question, persona_id, history, times, context)
     yield {"type": "stage", "slots": slots, "ruling": ruling, "timings_ms": dict(times),
            "semantic_by": evidence["semantic_by"]}
 
