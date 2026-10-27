@@ -9,14 +9,17 @@ import sys
 import threading
 import time
 
-import fitz
+import pymupdf as fitz
 import pytest
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import ingestion, llm, review, store
-from app.chunking import classify_section, split_structured_page
+from app.modules.knowledge import corpus as store
+from app.infrastructure.ollama import legacy as llm
+from app.modules.documents import review
+from app.modules.documents.chunking import classify_section, split_structured_page
+from app.workers import ingestion
 from app.main import app
 
 
@@ -103,7 +106,7 @@ def test_create_document_persists_pdf_safely_and_deduplicates_by_content():
 
 
 def test_document_quota_rejects_new_content_but_still_allows_duplicate(monkeypatch):
-    monkeypatch.setenv("IRFA_INGESTION_MAX_DOCUMENTS", "1")
+    monkeypatch.setenv("RISE_INGESTION_MAX_DOCUMENTS", "1")
     first_payload = _sample_pdf("First quarantined document. " * 12)
     second_payload = _sample_pdf("Second quarantined document. " * 12)
 
@@ -121,7 +124,7 @@ def test_total_quarantine_byte_quota_rejects_new_content_but_not_duplicate(monke
     first_payload = _sample_pdf("Stored within the byte quota. " * 12)
     second_payload = _sample_pdf("Would exceed the byte quota. " * 12)
     monkeypatch.setenv(
-        "IRFA_INGESTION_MAX_TOTAL_BYTES",
+        "RISE_INGESTION_MAX_TOTAL_BYTES",
         str(len(first_payload) + len(second_payload) - 1),
     )
 
@@ -141,7 +144,7 @@ def test_duplicate_with_missing_source_must_fit_byte_quota_before_restore(monkey
     directory = ingestion._document_dir(created["document_id"])
     source = directory / ingestion.get_document(created["document_id"])["stored_filename"]
     source.unlink()
-    monkeypatch.setenv("IRFA_INGESTION_MAX_TOTAL_BYTES", str(len(payload) - 1))
+    monkeypatch.setenv("RISE_INGESTION_MAX_TOTAL_BYTES", str(len(payload) - 1))
 
     with pytest.raises(ValueError, match="โควตาพื้นที่ PDF กักกันรวม"):
         ingestion.create_document(payload, "duplicate.pdf")
@@ -152,8 +155,8 @@ def test_duplicate_with_missing_source_must_fit_byte_quota_before_restore(monkey
 @pytest.mark.parametrize(
     "name,value",
     [
-        ("IRFA_INGESTION_MAX_DOCUMENTS", "not-a-number"),
-        ("IRFA_INGESTION_MAX_TOTAL_BYTES", "0"),
+        ("RISE_INGESTION_MAX_DOCUMENTS", "not-a-number"),
+        ("RISE_INGESTION_MAX_TOTAL_BYTES", "0"),
     ],
 )
 def test_invalid_quarantine_quota_configuration_fails_closed(monkeypatch, name, value):
@@ -166,7 +169,7 @@ def test_invalid_quarantine_quota_configuration_fails_closed(monkeypatch, name, 
 
 
 def test_document_quota_is_checked_atomically_for_concurrent_uploads(monkeypatch):
-    monkeypatch.setenv("IRFA_INGESTION_MAX_DOCUMENTS", "1")
+    monkeypatch.setenv("RISE_INGESTION_MAX_DOCUMENTS", "1")
     gate = threading.Barrier(3)
     results: list[dict] = []
     errors: list[Exception] = []
@@ -200,10 +203,10 @@ def test_document_quota_is_checked_atomically_for_concurrent_uploads(monkeypatch
 
 
 def test_blank_ingestion_env_uses_the_safe_default(monkeypatch):
-    monkeypatch.setenv("IRFA_INGESTION_ROOT", "")
-    monkeypatch.setenv("IRFA_INGESTION_DIR", "")
+    monkeypatch.setenv("RISE_INGESTION_ROOT", "")
+    monkeypatch.setenv("RISE_INGESTION_DIR", "")
 
-    assert ingestion._configured_root() == Path(ingestion.__file__).resolve().parent.parent / "data" / "ingestion"
+    assert ingestion._configured_root() == Path(ingestion.__file__).resolve().parents[2] / "data" / "ingestion"
 
 
 def test_processing_creates_ordered_draft_chunks_and_is_idempotent(monkeypatch):

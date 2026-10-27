@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from app import store
+from app.modules.knowledge import corpus as store
 
 
 @pytest.fixture

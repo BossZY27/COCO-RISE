@@ -1,51 +1,81 @@
-name: coco-rise
-
+name: rise
+x-app: &app
+  build: .
+  environment: &environment
+    RISE_DATABASE_URL: postgresql+psycopg://rise:${RISE_POSTGRES_PASSWORD:-rise-local-only}@postgres:5432/rise
+    RISE_LLM_BASE: http://ollama:11434
+    RISE_ANSWER_MODEL: ${RISE_ANSWER_MODEL:-qwen3:1.7b}
+    RISE_EMBED_MODEL: ${RISE_EMBED_MODEL:-bge-m3}
+    RISE_ADMIN_TOKEN: ${RISE_ADMIN_TOKEN:-}
+    RISE_FILES_DIR: /srv/rise/data/private
+    RISE_SOURCE_DIR: /srv/rise/funds-data
+    RISE_TRUSTED_HOSTS: localhost,127.0.0.1,api,testserver
+    RISE_LLM_TIMEOUT: 30
+    RISE_AUDIT: off
+  volumes:
+    - pdfs:/srv/rise/data/private
+  depends_on:
+    postgres:
+      condition: service_healthy
 services:
-  api:
-    build: .
+  postgres:
+    image: pgvector/pgvector:pg17
     environment:
-      IRFA_LLM_BASE: http://ollama:11434
-      IRFA_EMBED_MODEL: ${IRFA_EMBED_MODEL:-bge-m3:latest}
-      IRFA_EXPOSE_DOCS: "on"
-      IRFA_ADMIN_ENABLED: ${IRFA_ADMIN_ENABLED:-on}
-      IRFA_ADMIN_TOKEN: ${IRFA_ADMIN_TOKEN:-}
-      IRFA_AUDIT: ${IRFA_AUDIT:-off}
-      IRFA_TRUSTED_HOSTS: localhost,127.0.0.1,api,testserver
-      IRFA_SOURCE_DIR: /app/data/private
-      IRFA_INGESTION_DIR: /app/data/ingestion
-    ports:
-      - "127.0.0.1:${IRFA_API_PORT:-8077}:8077"
+      POSTGRES_USER: rise
+      POSTGRES_PASSWORD: ${RISE_POSTGRES_PASSWORD:-rise-local-only}
+      POSTGRES_DB: rise
     volumes:
-      - rise-data:/app/data
-      - ./data/private:/app/data/private:ro
+      - postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8077/healthz', timeout=3)"]
+      test: [CMD-SHELL, pg_isready -U rise -d rise]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  migrate:
+    <<: *app
+    command: [alembic, upgrade, head]
+    restart: "no"
+  seed:
+    <<: *app
+    command: [python, scripts/seed.py]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+  api:
+    <<: *app
+    ports:
+      - 127.0.0.1:${RISE_API_PORT:-8077}:8077
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8077/v2/ready]
       interval: 10s
       timeout: 5s
       retries: 10
+  worker:
+    <<: *app
+    command: [python, -m, app.workers.main]
     depends_on:
-      - ollama
+      seed:
+        condition: service_completed_successfully
     restart: unless-stopped
-
   ollama:
     image: ollama/ollama:0.13.5
     volumes:
-      - ollama-models:/root/.ollama
-    restart: unless-stopped
-
+      - models:/root/.ollama
   models:
     image: curlimages/curl:8.17.0
     profiles: [setup]
-    entrypoint: ["/bin/sh", "-ec"]
+    entrypoint: [/bin/sh, -ec]
     command:
       - >-
         until curl -fsS http://ollama:11434/api/version; do sleep 2; done;
-        curl -fS http://ollama:11434/api/pull
-        -d '{"name":"${IRFA_EMBED_MODEL:-bge-m3:latest}","stream":false}'
-    depends_on:
-      - ollama
-
+        curl -fS http://ollama:11434/api/pull -d '{"name":"${RISE_ANSWER_MODEL:-qwen3:1.7b}","stream":false}';
+        curl -fS http://ollama:11434/api/pull -d '{"name":"${RISE_EMBED_MODEL:-bge-m3}","stream":false}'
+    depends_on: [ollama]
 volumes:
-  rise-data:
-  ollama-models:
-
+  postgres:
+  pdfs:
+  models:

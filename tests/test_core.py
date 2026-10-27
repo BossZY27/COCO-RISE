@@ -17,7 +17,13 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import answers, audit, identity, limits, llm, pipeline, review, store, understand
+from app.core import security as limits
+from app.infrastructure.json import audit
+from app.modules.knowledge import corpus as store
+from app.infrastructure.ollama import legacy as llm
+from app.modules.documents import review
+from app.modules.query import persona as identity
+from app.modules.query import answers, engine as pipeline, understand
 from app.main import app
 
 
@@ -166,7 +172,7 @@ def test_model_api_reports_verified_template_mode_and_rejects_selection(monkeypa
 
 def test_safe_answer_mode_does_not_consult_ollama_for_model_selection(monkeypatch):
     from fastapi import HTTPException
-    from app.main import _selected_model
+    from app.modules.legacy.api import _selected_model
 
     def down():
         raise RuntimeError("ollama is not running")
@@ -1558,7 +1564,8 @@ def test_admin_pending_includes_rows_with_a_missing_verified_marker(monkeypatch)
     assert pending["chunks"] == [chunk]
 
 
-def test_admin_page_offers_original_pdf_and_ocr_review():
+def test_admin_page_offers_original_pdf_and_ocr_review(monkeypatch):
+    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
     page = TestClient(app).get("/admin")
 
     assert page.status_code == 200
@@ -1566,10 +1573,13 @@ def test_admin_page_offers_original_pdf_and_ocr_review():
     assert "ดูข้อความ OCR" in page.text
     assert "ตรวจ PDF ใหม่ก่อนนำเข้าระบบ" in page.text
     assert "ไม่บันทึกไฟล์" in page.text
+    assert "function requireReviewer()" in page.text
+    assert "input.scrollIntoView" in page.text
+    assert "reviewer: who()" not in page.text
 
 
 def _sample_text_pdf() -> bytes:
-    import fitz
+    import pymupdf as fitz
 
     document = fitz.open()
     page = document.new_page()
@@ -1580,7 +1590,7 @@ def _sample_text_pdf() -> bytes:
 
 
 def test_pdf_inspection_reads_text_but_never_marks_it_verified():
-    from app import pdf_inspection
+    from app.modules.documents import pdf_inspection
 
     report = pdf_inspection.inspect(_sample_text_pdf(), "new-fund.pdf")
 
@@ -1593,7 +1603,7 @@ def test_pdf_inspection_reads_text_but_never_marks_it_verified():
 
 
 def test_pdf_inspection_marks_ocr_numbers_as_unverified_candidates(monkeypatch):
-    from app import pdf_inspection
+    from app.modules.documents import pdf_inspection
 
     monkeypatch.setattr(pdf_inspection, "page_text", lambda _page, _dpi: ("วงเงิน 100,000 บาท", "ocr"))
     report = pdf_inspection.inspect(_sample_text_pdf(), "scan.pdf")
@@ -1604,7 +1614,7 @@ def test_pdf_inspection_marks_ocr_numbers_as_unverified_candidates(monkeypatch):
 
 
 def test_pdf_inspection_explains_when_a_scanned_page_cannot_be_read(monkeypatch):
-    from app import pdf_inspection
+    from app.modules.documents import pdf_inspection
 
     monkeypatch.setattr(pdf_inspection, "page_text", lambda _page, _dpi: ("", "needs_ocr"))
     report = pdf_inspection.inspect(_sample_text_pdf(), "scan.pdf")
@@ -1641,7 +1651,7 @@ def test_pdf_inspection_api_requires_admin_token_and_rejects_non_pdfs(monkeypatc
 
 
 def test_pdf_inspection_api_rejects_oversized_upload_before_parsing(monkeypatch):
-    from app import pdf_inspection
+    from app.modules.documents import pdf_inspection
 
     monkeypatch.setattr(review, "TOKEN", "test-admin-token")
     monkeypatch.setattr(pdf_inspection, "MAX_BYTES", 16)

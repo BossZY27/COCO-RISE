@@ -1,6 +1,8 @@
-# IRFA Proposal Brief From Annotated PDF
+> Historical demo/research context. The implementation plan now authorizes the PostgreSQL MVP and the verified v2 candidate path; v1 remains deterministic. See [current architecture](docs/architecture.md) and [runbook](docs/runbook.md). This update does not approve any source data.
 
-Source: `C:\Users\Lenovo\Downloads\IRFA-เค้าโครงโครงงานคอมพิวเตอร์-2569_260929_032046.pdf` (9 pages, annotated in red). The red handwriting is part of the page image; text extraction alone misses it. This file records the reading used for proposal edits, not new grant facts or permission to approve OCR data.
+# RISE Proposal Brief From Annotated PDF
+
+Source: `C:\Users\Lenovo\Downloads\RISE-เค้าโครงโครงงานคอมพิวเตอร์-2569_260929_032046.pdf` (9 pages, annotated in red). The red handwriting is part of the page image; text extraction alone misses it. This file records the reading used for proposal edits, not new grant facts or permission to approve OCR data.
 
 ## Scope and Claim Boundaries
 
@@ -15,7 +17,7 @@ Source: `C:\Users\Lenovo\Downloads\IRFA-เค้าโครงโครงง�
 
 | PDF page | Reviewer mark | Editorial response |
 |---|---|---|
-| 3 | Mark near “IRFA” in the rationale | Explain the project name and make the title consistent throughout; do not invent an expansion for the acronym. |
+| 3 | Mark near “RISE” in the rationale | Explain the project name and make the title consistent throughout; do not invent an expansion for the acronym. |
 | 4 | Objective 1 struck through, note that matching may not be feasible | Remove grant matching from the committed objectives. |
 | 4 | Draft-proposal checking struck through in objective 3 | Remove it from methods, scope, schedule, and benefits as well. |
 | 4 | Notes about missing vector/structured-KB literature and OCR | Add directly relevant primary references and explain their actual role in this design. |

@@ -1,6 +1,8 @@
 """Regression coverage for optional semantic retrieval outages."""
 
-from app import llm, pipeline, store
+from app.modules.knowledge import corpus as store
+from app.infrastructure.ollama import legacy as llm
+from app.modules.query import engine as pipeline
 
 
 def test_embedding_outage_uses_a_circuit_breaker_instead_of_waiting_every_query(monkeypatch):

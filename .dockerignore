@@ -1,14 +1,12 @@
 .git
-.github
 .venv
+.env
 .vscode
-*.pdf
 __pycache__
 .pytest_cache
-*.py[cod]
-.env
 logs
 data/private
 data/ingestion
 data/embeddings.json
-
+*.bak
+*.tmp

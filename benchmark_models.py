@@ -1,8 +1,8 @@
-"""Retired answer-model benchmark for the fail-closed IRFA pipeline.
+"""Retired answer-model benchmark for the fail-closed RISE pipeline.
 
 Usage: python benchmark_models.py [model-name ...]
 
-IRFA now uses ``verified_template`` answers. The LLM is not allowed to rephrase
+RISE now uses ``verified_template`` answers. The LLM is not allowed to rephrase
 the final answer, so comparing answer models would report a capability that the
 running service deliberately does not use.
 """

@@ -68,7 +68,7 @@ def check(case: dict, result: dict) -> list[str]:
 
 
 async def main(args) -> int:
-    from app import pipeline
+    from app.modules.query import engine as pipeline
 
     cases = json.loads((Path(__file__).parent / args.cases).read_text(encoding="utf-8"))
     cases = resolve_dynamic_expectations(cases, pipeline.thai_fiscal_year())

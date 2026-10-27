@@ -3,11 +3,13 @@
 import hashlib
 from contextlib import nullcontext
 
-import fitz
+import pymupdf as fitz
 import pytest
 from fastapi.testclient import TestClient
 
-from app import ingestion, publication, review, store
+from app.modules.knowledge import corpus as store
+from app.modules.documents import publication, review
+from app.workers import ingestion
 from app.main import app
 
 

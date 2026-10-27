@@ -13,7 +13,7 @@ import re
 import sys
 from pathlib import Path
 
-import fitz
+import pymupdf as fitz
 
 CLAUSE = re.compile(r"^\s*(ข้อ\s*\d+|\d+\.\d+(?:\.\d+)?)\s")
 YEAR = re.compile(r"25\d\d")

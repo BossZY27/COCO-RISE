@@ -4,6 +4,8 @@ agent-config.local.yaml
 /AGENTS.md
 /CLAUDE.md
 /agents/codex.md
+.vscode
+
 
 # demo runtime
 .env
@@ -18,7 +20,11 @@ tmp/
 eval_with_llm.txt
 eval_clean.txt
 data/embeddings.json
+data/coco_rise.db
 data/ingestion/
 data/private/
 todo/*
 !todo/README.md
+data/private/
+.venv/
+funds-data/*

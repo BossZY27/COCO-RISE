@@ -13,7 +13,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import llm, pipeline, store
+from app.modules.knowledge import corpus as store
+from app.infrastructure.ollama import legacy as llm
+from app.modules.query import engine as pipeline
 
 
 def ask(question: str, persona: str = "P1") -> dict:

@@ -1,8 +1,26 @@
+# RISE API MVP
+
+The PostgreSQL/Docker MVP is implemented alongside the compatible `/v1` demo. Start with [the runbook](docs/runbook.md), [API guide](docs/api.md), and [architecture](docs/architecture.md).
+
+```sh
+python scripts/migrate_env.py
+docker compose up --build -d
+docker compose --profile setup run --rm models
+```
+
+Set `RISE_ADMIN_TOKEN` in `.env` for admin APIs. Swagger is at `http://127.0.0.1:8077/docs`; the generated read-only `/v2` contract is at `/design/docs`. Docker runtime data comes from PostgreSQL 17/pgvector, with private PDF and model volumes. `/v1` keeps templates/personas/SSE; `/v2` adds versioned review, facts/rules, leased jobs, hybrid retrieval and verified model/fallback answers.
+
+The material below documents the original standalone JSON demo and historical measurements. For current deployment and limitations use the linked MVP runbook. Unreviewed source facts remain unreviewed; passing tests is not evidence of research answer quality.
+
+---
+
 # COCO-RISE demo
+
+เอกสารออกแบบ MVP และ Swagger ของระบบเป้าหมายอยู่ที่ [docs/README.md](docs/README.md) — แยกจาก API ของเดโมที่ทำงานอยู่
 
 **อัปเดตล่าสุด:** 2026-10-18
 
-COCO-RISE คือชื่อระบบที่ใช้ต่อจากชื่อเดิม IRFA ชื่อโฟลเดอร์และตัวแปรตั้งค่า `IRFA_*` ยังใช้แบบเดิมในระยะเปลี่ยนชื่อ เพื่อไม่ให้การติดตั้งเดิมหยุดทำงาน
+COCO-RISE คือชื่อระบบที่ใช้ต่อจากชื่อเดิม RISE ชื่อโฟลเดอร์และตัวแปรตั้งค่า `RISE_*` ยังใช้แบบเดิมในระยะเปลี่ยนชื่อ เพื่อไม่ให้การติดตั้งเดิมหยุดทำงาน
 
 ระบบตอบคำถามทุนวิจัยของวิทยาลัยการคอมพิวเตอร์ ทำตามภาพสถาปัตยกรรมฉบับย่อ คือ วิเคราะห์คำถาม ค้นคืนหลักฐาน สร้างคำตอบ แล้วตรวจก่อนส่ง
 ระบบทำงานใน **fail-closed safe mode** คำตอบทั้งหมดมาจาก template ที่โค้ดประกอบจากข้อความ ข้อเท็จจริง และกฎที่คนตรวจแล้ว จากนั้น `pipeline.verify` ตรวจซ้ำก่อนส่ง ระบบไม่ใช้ LLM เขียนหรือเรียบเรียงคำตอบอิสระ
@@ -123,12 +141,12 @@ python eval_quality.py
 
 | ขั้นตอน | ไฟล์ | ทำอะไร |
 |---|---|---|
-| 1 วิเคราะห์คำถาม | `app/pipeline.py: analyze`, `app/query_patterns.py` | เขียนคำถามต่อเนื่องให้สมบูรณ์ หาชื่อทุน ชั้น ปีงบ และเจตนาด้วยกติกา deterministic |
-| 2 ค้นคืนหลักฐาน | `app/store.py`, `pipeline.retrieve` | ยิงขนานสามทาง คือคำสำคัญ BM25 ความหมายด้วย bge-m3 และข้อเท็จจริงเชิงโครงสร้าง แล้วรวมด้วย RRF |
-| 3 สร้างคำตอบ | `pipeline.check_rules`, `app/answer_composer.py`, `app/answers.py` | ตรวจสิทธิ์จากกฎกับโปรไฟล์ แล้ว render template จากแถวที่ตรวจแล้ว |
-| 4 ตรวจแล้วส่งกลับ | `app/verification.py` (`pipeline.verify`) | ตรวจตัวเลข ปีงบ ชื่อทุน เงื่อนไข และอ้างอิง หากไม่ผ่านจะตอบแบบ blocked โดยไม่ส่งข้อความที่ตรวจไม่ผ่าน |
+| 1 วิเคราะห์คำถาม | `app/modules/query/engine.py`, `patterns.py` | เขียนคำถามต่อเนื่องให้สมบูรณ์ หาชื่อทุน ชั้น ปีงบ และเจตนาด้วยกติกา deterministic |
+| 2 ค้นคืนหลักฐาน | `app/modules/retrieval/`, `app/modules/knowledge/corpus.py` | ยิงขนานสามทาง คือคำสำคัญ BM25 ความหมายด้วย bge-m3 และข้อเท็จจริงเชิงโครงสร้าง แล้วรวมด้วย RRF |
+| 3 สร้างคำตอบ | `app/modules/query/composer.py`, `answers.py` | ตรวจสิทธิ์จากกฎกับโปรไฟล์ แล้ว render template จากแถวที่ตรวจแล้ว |
+| 4 ตรวจแล้วส่งกลับ | `app/modules/query/verification.py` | ตรวจตัวเลข ปีงบ ชื่อทุน เงื่อนไข และอ้างอิง หากไม่ผ่านจะตอบแบบ blocked โดยไม่ส่งข้อความที่ตรวจไม่ผ่าน |
 
-เวลาแก้โค้ด ให้เลือกส่วนตามหน้าที่: `app/main.py` เป็นทางเข้า API สาธารณะ, `app/api_admin.py` ดูแล endpoint ผู้ดูแล, `app/chat.html` กับ `app/admin.html` เป็นหน้าจอ, `app/pipeline.py` ประสานการถามตอบ, `app/query_patterns.py` เก็บรูปแบบคำถาม, `app/answer_composer.py` ประกอบคำตอบจากข้อมูลที่ตรวจแล้ว, และ `app/verification.py` ตรวจคำตอบก่อนส่ง ส่วน `app/ingestion.py` เตรียม PDF เป็นฉบับร่าง, `app/publication.py` ตรวจเงื่อนไขการเผยแพร่, `app/publication_storage.py` อ่านเขียนพื้นที่กักกันกับคลังค้น และ `app/store.py` ดูแลการค้นข้อมูลที่อนุมัติแล้ว การแยกกติกาเผยแพร่ออกจากการจัดเก็บทำให้ทดสอบกติกาด้วยคลังจำลองได้โดยไม่ต้องเปิด PDF จริง (`tests/test_publication.py`) แต่ยังต้องทดสอบการทำงานร่วมกันก่อนใช้งานทุกครั้ง
+เวลาแก้โค้ด ให้เลือกส่วนตามหน้าที่: `app/main.py` ประกอบ API, `app/modules/legacy/` รักษา `/v1`, `app/static/` เก็บหน้าจอ, `app/modules/query/` วิเคราะห์และตรวจคำตอบ, `app/modules/documents/` ตรวจ PDF/review/publish, `app/workers/` ทำ ingestion/indexing และ `app/infrastructure/` เชื่อม PostgreSQL, Ollama, filesystem และ JSON fixtures รายละเอียดแผนผังอยู่ใน `docs/project-structure.md`
 
 จุดที่ต่างจาก RAG ทั่วไปและเป็นหัวใจของโปรเจกต์
 
@@ -199,7 +217,7 @@ SSE ส่งคำตอบเดียวกับ endpoint ปกติจา
 | `list` | มีทุนอะไรบ้าง, ทุนมีกี่ประเภท | รายชื่อทุนทั้งหมดจากบัญชีแนบท้าย แยกสองหมวด |
 | `application` | สมัครยังไง, ต้องใช้เอกสารอะไร | แจ้งว่าเดโมยังไม่มีขั้นตอนหรือเอกสารที่ตรวจแล้ว ไม่ตอบเรื่องเงินแทน |
 
-คำว่า “ปีนี้”, “ปีหน้า” และ “ปีก่อน” คำนวณปีงบไทยตามเขตเวลา Asia/Bangkok ใหม่ทุก request และเปลี่ยนปีในวันที่ 1 ตุลาคม เซิร์ฟเวอร์ที่เปิดข้ามวันจึงไม่ค้างปีเก่า ส่วนคำถามที่ไม่ระบุปีใช้ `IRFA_FISCAL_YEAR` ซึ่งหมายถึงปีของชุดข้อมูลรายปีล่าสุดที่ตรวจแล้ว ไม่ใช่เวลาปัจจุบันโดยอัตโนมัติ
+คำว่า “ปีนี้”, “ปีหน้า” และ “ปีก่อน” คำนวณปีงบไทยตามเขตเวลา Asia/Bangkok ใหม่ทุก request และเปลี่ยนปีในวันที่ 1 ตุลาคม เซิร์ฟเวอร์ที่เปิดข้ามวันจึงไม่ค้างปีเก่า ส่วนคำถามที่ไม่ระบุปีใช้ `RISE_FISCAL_YEAR` ซึ่งหมายถึงปีของชุดข้อมูลรายปีล่าสุดที่ตรวจแล้ว ไม่ใช่เวลาปัจจุบันโดยอัตโนมัติ
 
 ระยะเดโมนี้ยังไม่แนะนำหรือเลือกทุนให้จากลักษณะงานหรือข้อมูลส่วนบุคคล คำถามที่ขอให้แนะนำ
 หรือบอกความต้องการโดยไม่ระบุทุน จะได้รับคำชี้แจงให้เปิดรายการทุนทั้งหมดและถามต่อด้วยชื่อทุน
@@ -243,7 +261,7 @@ SSE ส่งคำตอบเดียวกับ endpoint ปกติจา
 
 พื้นที่กักกันรับค่าเริ่มต้นไม่เกิน 100 เอกสารและ PDF ต้นฉบับรวม 512 MiB ตรวจโควตาภายใต้ lock ก่อนบันทึก เนื้อหาที่มี SHA-256 ซ้ำยังคืนรายการเดิมได้แม้โควตาเต็ม โควตานับเฉพาะไฟล์ PDF ใน `documents/` ไม่รวม metadata, chunks หรือไฟล์ชั่วคราว
 
-สถานะงานมี `queued`, `extracting`, `chunking`, `awaiting_review`, `needs_ocr` และ `failed` ไฟล์เดิมที่อัปโหลดซ้ำจะอ้างงานเดิมด้วยค่า SHA-256 จึงไม่สร้างสำเนาซ้ำ หากบางหน้าอ่านไม่ได้ ระบบยังเก็บส่วนที่อ่านได้ให้เปิดดู แต่ล็อกการแก้จนกว่าจะลอง OCR ใหม่สำเร็จ เพื่อไม่ให้การประมวลผลซ้ำเขียนทับงานคน เอกสารและชิ้นข้อความฉบับร่างอยู่ใต้ `IRFA_INGESTION_DIR` ซึ่งค่าเริ่มต้นคือ `data/ingestion/` และไม่ถูกโหลดเข้า `store.CHUNKS`, `facts.json`, `rules.json` หรือเวกเตอร์ค้นหา
+สถานะงานมี `queued`, `extracting`, `chunking`, `awaiting_review`, `needs_ocr` และ `failed` ไฟล์เดิมที่อัปโหลดซ้ำจะอ้างงานเดิมด้วยค่า SHA-256 จึงไม่สร้างสำเนาซ้ำ หากบางหน้าอ่านไม่ได้ ระบบยังเก็บส่วนที่อ่านได้ให้เปิดดู แต่ล็อกการแก้จนกว่าจะลอง OCR ใหม่สำเร็จ เพื่อไม่ให้การประมวลผลซ้ำเขียนทับงานคน เอกสารและชิ้นข้อความฉบับร่างอยู่ใต้ `RISE_INGESTION_DIR` ซึ่งค่าเริ่มต้นคือ `data/ingestion/` และไม่ถูกโหลดเข้า `store.CHUNKS`, `facts.json`, `rules.json` หรือเวกเตอร์ค้นหา
 
 เมื่อเปิดเซิร์ฟเวอร์ใหม่ ระบบจะอ่านสถานะที่บันทึกไว้ สร้างระเบียนงานที่อาจขาดหายจากการหยุดกลางคัน และทำงาน `queued`/`extracting`/`chunking` ต่อ งาน `needs_ocr` หรือ `failed` ต้องให้เจ้าหน้าที่กด **ลองประมวลผลอีกครั้ง** งาน OCR และตรวจ PDF ถูกจำกัดด้วยคิว FIFO ให้ทำทีละงานต่อหนึ่งโปรเซสเพื่อไม่แย่ง CPU กับการถามตอบ
 
@@ -273,44 +291,44 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 
 | ตัวแปร | ค่าเริ่มต้น | ใช้ทำอะไร |
 |---|---|---|
-| `IRFA_LLM_BASE` | `http://127.0.0.1:11434` | ที่อยู่ Ollama สำหรับ `bge-m3`; ไม่มีผลต่อการ render คำตอบ |
-| `IRFA_EMBED_MODEL` | `bge-m3:latest` | โมเดลฝังเวกเตอร์ |
-| `IRFA_EMBED_BATCH` | `16` | จำนวนชิ้นข้อความต่อหนึ่งคำขอฝังเวกเตอร์ |
-| `IRFA_EMBED_TIMEOUT` | `120` | เวลารอสูงสุดต่อคำขอฝังเวกเตอร์เป็นวินาที |
-| `IRFA_SEMANTIC_QUERY_TIMEOUT` | `2` | เวลารอ semantic query ต่อคำถามเป็นวินาที ก่อนถอยไปใช้ trigram |
-| `IRFA_SEMANTIC_RETRY_SECONDS` | `30` | ช่วงพักเป็นวินาทีก่อนลอง semantic query ผ่าน Ollama ใหม่หลังล้มเหลว |
-| `IRFA_PROFILE_SOURCE` | `demo` | แหล่งโปรไฟล์ผู้ถาม เปลี่ยนเป็นตัวเชื่อมฐานข้อมูลบุคลากรเมื่อพร้อม |
-| `IRFA_AUDIT` | `on` | บันทึกคำถามและคำตอบลง `logs/queries.jsonl` |
-| `IRFA_FISCAL_YEAR` | `2569` | ปีของชุดข้อมูลรายปีล่าสุดที่ตรวจแล้ว เมื่อคำถามไม่ระบุปี |
-| `IRFA_AUDIT_MAX_TAIL` | `200` | จำนวนแถวสูงสุดที่ `/v1/recent` อ่านกลับ |
-| `IRFA_AUDIT_MAX_BYTES` | `10485760` | หมุนไฟล์ audit ก่อนการเขียนครั้งถัดไปเมื่อไฟล์ปัจจุบันจะเกิน 10 MiB |
-| `IRFA_AUDIT_BACKUPS` | `1` | จำนวนไฟล์ audit ที่หมุนเก็บย้อนหลัง |
-| `IRFA_AUDIT_TAIL_READ_BYTES` | `2097152` | จำนวนไบต์สูงสุดที่อ่านจากท้ายไฟล์ audit แต่ละไฟล์เพื่อแสดง `/v1/recent` |
-| `IRFA_ADMIN_TOKEN` | ว่าง | โทเคนของหน้า `/admin` ถ้าเว้นว่าง API ผู้ดูแลจะปิดทั้งหมด |
-| `IRFA_ADMIN_ENABLED` | `on` | สวิตช์ปิดหน้าและ API ผู้ดูแลทั้งหมด โหมดเดโมเพื่อนตั้งเป็น `off` |
-| `IRFA_EXPOSE_DOCS` | `on` | เปิด `/docs`, `/redoc` และ `/openapi.json`; โหมดเดโมเพื่อนปิด |
-| `IRFA_TRUSTED_HOSTS` | `127.0.0.1,localhost,testserver` | รายชื่อ Host header ที่รับได้ คั่นด้วยจุลภาค ต้องระบุ LAN IP เพิ่มเมื่อเปิดให้เพื่อนและห้ามใช้ `*` |
-| `IRFA_TRUST_PROXY_USER` | `off` | เชื่อ `X-User-Id` เฉพาะเมื่อมี reverse proxy ที่ยืนยัน session และเขียน header นี้เอง |
-| `IRFA_TRUSTED_PROXY_IPS` | `127.0.0.1,::1` | IP แบบเจาะจงที่อนุญาตให้ส่ง `X-User-Id`; ใช้เฉพาะเมื่อเปิด `IRFA_TRUST_PROXY_USER` |
-| `IRFA_INGESTION_DIR` | `data/ingestion` | พื้นที่กักกัน PDF ที่อัปโหลด งานประมวลผล และชิ้นข้อความฉบับร่าง; ไม่ใช่คลังคำตอบ |
-| `IRFA_INGESTION_MAX_DOCUMENTS` | `100` | จำนวน PDF ต้นฉบับสูงสุดในพื้นที่กักกัน; ต้องเป็นจำนวนเต็มบวก |
-| `IRFA_INGESTION_MAX_TOTAL_BYTES` | `536870912` | ขนาด PDF ต้นฉบับรวมสูงสุด 512 MiB; ต้องเป็นจำนวนเต็มบวก |
-| `IRFA_MAX_QUESTION` | `400` | ความยาวคำถามสูงสุด |
-| `IRFA_RATE_LIMIT` | `12` | จำนวนคำถามต่อคนในหนึ่งช่วงเวลา |
-| `IRFA_RATE_WINDOW` | `60` | ความยาวช่วงเวลาเป็นวินาที |
-| `IRFA_CLIENT_RATE_LIMIT` | `12` | จำนวนคำถามต่อ IP ป้องกันการเปลี่ยน persona หรือ header เพื่อหลบโควตา |
-| `IRFA_CLIENT_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดคำถามต่อ IP เป็นวินาที |
-| `IRFA_MAX_HISTORY` | `8` | จำนวนตาสนทนาที่ยอมรับกลับมา |
-| `IRFA_MAX_HISTORY_ITEM` | `400` | ความยาวสูงสุดของประวัติแต่ละตา |
-| `IRFA_MAX_REQUEST_BODY_BYTES` | `65536` | ขนาดสูงสุดของ request body ทั่วไป; endpoint PDF มีเพดานแยก |
-| `IRFA_MAX_FEEDBACK_QUESTION` | `400` | ความยาวคำถามในความเห็น |
-| `IRFA_MAX_FEEDBACK_ANSWER` | `8000` | ความยาวคำตอบในความเห็น |
-| `IRFA_MAX_FEEDBACK_NOTE` | `400` | ความยาวหมายเหตุในความเห็น |
-| `IRFA_FEEDBACK_RATE_LIMIT` | `8` | จำนวนความเห็นต่อผู้ใช้ในหนึ่งช่วงเวลา |
-| `IRFA_FEEDBACK_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดความเห็นเป็นวินาที |
-| `IRFA_FEEDBACK_CLIENT_RATE_LIMIT` | `8` | จำนวนความเห็นต่อ IP ในหนึ่งช่วงเวลา |
-| `IRFA_FEEDBACK_CLIENT_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดความเห็นต่อ IP เป็นวินาที |
-| `IRFA_RATE_BUCKET_CAP` | `2048` | จำนวน bucket สูงสุดต่อ limiter; bucket ที่หมดอายุถูกลบทิ้งอัตโนมัติ |
+| `RISE_LLM_BASE` | `http://127.0.0.1:11434` | ที่อยู่ Ollama สำหรับ `bge-m3`; ไม่มีผลต่อการ render คำตอบ |
+| `RISE_EMBED_MODEL` | `bge-m3:latest` | โมเดลฝังเวกเตอร์ |
+| `RISE_EMBED_BATCH` | `16` | จำนวนชิ้นข้อความต่อหนึ่งคำขอฝังเวกเตอร์ |
+| `RISE_EMBED_TIMEOUT` | `120` | เวลารอสูงสุดต่อคำขอฝังเวกเตอร์เป็นวินาที |
+| `RISE_SEMANTIC_QUERY_TIMEOUT` | `2` | เวลารอ semantic query ต่อคำถามเป็นวินาที ก่อนถอยไปใช้ trigram |
+| `RISE_SEMANTIC_RETRY_SECONDS` | `30` | ช่วงพักเป็นวินาทีก่อนลอง semantic query ผ่าน Ollama ใหม่หลังล้มเหลว |
+| `RISE_PROFILE_SOURCE` | `demo` | แหล่งโปรไฟล์ผู้ถาม เปลี่ยนเป็นตัวเชื่อมฐานข้อมูลบุคลากรเมื่อพร้อม |
+| `RISE_AUDIT` | `on` | บันทึกคำถามและคำตอบลง `logs/queries.jsonl` |
+| `RISE_FISCAL_YEAR` | `2569` | ปีของชุดข้อมูลรายปีล่าสุดที่ตรวจแล้ว เมื่อคำถามไม่ระบุปี |
+| `RISE_AUDIT_MAX_TAIL` | `200` | จำนวนแถวสูงสุดที่ `/v1/recent` อ่านกลับ |
+| `RISE_AUDIT_MAX_BYTES` | `10485760` | หมุนไฟล์ audit ก่อนการเขียนครั้งถัดไปเมื่อไฟล์ปัจจุบันจะเกิน 10 MiB |
+| `RISE_AUDIT_BACKUPS` | `1` | จำนวนไฟล์ audit ที่หมุนเก็บย้อนหลัง |
+| `RISE_AUDIT_TAIL_READ_BYTES` | `2097152` | จำนวนไบต์สูงสุดที่อ่านจากท้ายไฟล์ audit แต่ละไฟล์เพื่อแสดง `/v1/recent` |
+| `RISE_ADMIN_TOKEN` | ว่าง | โทเคนของหน้า `/admin` ถ้าเว้นว่าง API ผู้ดูแลจะปิดทั้งหมด |
+| `RISE_ADMIN_ENABLED` | `on` | สวิตช์ปิดหน้าและ API ผู้ดูแลทั้งหมด โหมดเดโมเพื่อนตั้งเป็น `off` |
+| `RISE_EXPOSE_DOCS` | `on` | เปิด `/docs`, `/redoc` และ `/openapi.json`; โหมดเดโมเพื่อนปิด |
+| `RISE_TRUSTED_HOSTS` | `127.0.0.1,localhost,testserver` | รายชื่อ Host header ที่รับได้ คั่นด้วยจุลภาค ต้องระบุ LAN IP เพิ่มเมื่อเปิดให้เพื่อนและห้ามใช้ `*` |
+| `RISE_TRUST_PROXY_USER` | `off` | เชื่อ `X-User-Id` เฉพาะเมื่อมี reverse proxy ที่ยืนยัน session และเขียน header นี้เอง |
+| `RISE_TRUSTED_PROXY_IPS` | `127.0.0.1,::1` | IP แบบเจาะจงที่อนุญาตให้ส่ง `X-User-Id`; ใช้เฉพาะเมื่อเปิด `RISE_TRUST_PROXY_USER` |
+| `RISE_INGESTION_DIR` | `data/ingestion` | พื้นที่กักกัน PDF ที่อัปโหลด งานประมวลผล และชิ้นข้อความฉบับร่าง; ไม่ใช่คลังคำตอบ |
+| `RISE_INGESTION_MAX_DOCUMENTS` | `100` | จำนวน PDF ต้นฉบับสูงสุดในพื้นที่กักกัน; ต้องเป็นจำนวนเต็มบวก |
+| `RISE_INGESTION_MAX_TOTAL_BYTES` | `536870912` | ขนาด PDF ต้นฉบับรวมสูงสุด 512 MiB; ต้องเป็นจำนวนเต็มบวก |
+| `RISE_MAX_QUESTION` | `400` | ความยาวคำถามสูงสุด |
+| `RISE_RATE_LIMIT` | `12` | จำนวนคำถามต่อคนในหนึ่งช่วงเวลา |
+| `RISE_RATE_WINDOW` | `60` | ความยาวช่วงเวลาเป็นวินาที |
+| `RISE_CLIENT_RATE_LIMIT` | `12` | จำนวนคำถามต่อ IP ป้องกันการเปลี่ยน persona หรือ header เพื่อหลบโควตา |
+| `RISE_CLIENT_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดคำถามต่อ IP เป็นวินาที |
+| `RISE_MAX_HISTORY` | `8` | จำนวนตาสนทนาที่ยอมรับกลับมา |
+| `RISE_MAX_HISTORY_ITEM` | `400` | ความยาวสูงสุดของประวัติแต่ละตา |
+| `RISE_MAX_REQUEST_BODY_BYTES` | `65536` | ขนาดสูงสุดของ request body ทั่วไป; endpoint PDF มีเพดานแยก |
+| `RISE_MAX_FEEDBACK_QUESTION` | `400` | ความยาวคำถามในความเห็น |
+| `RISE_MAX_FEEDBACK_ANSWER` | `8000` | ความยาวคำตอบในความเห็น |
+| `RISE_MAX_FEEDBACK_NOTE` | `400` | ความยาวหมายเหตุในความเห็น |
+| `RISE_FEEDBACK_RATE_LIMIT` | `8` | จำนวนความเห็นต่อผู้ใช้ในหนึ่งช่วงเวลา |
+| `RISE_FEEDBACK_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดความเห็นเป็นวินาที |
+| `RISE_FEEDBACK_CLIENT_RATE_LIMIT` | `8` | จำนวนความเห็นต่อ IP ในหนึ่งช่วงเวลา |
+| `RISE_FEEDBACK_CLIENT_RATE_WINDOW` | `60` | ความยาวช่วงจำกัดความเห็นต่อ IP เป็นวินาที |
+| `RISE_RATE_BUCKET_CAP` | `2048` | จำนวน bucket สูงสุดต่อ limiter; bucket ที่หมดอายุถูกลบทิ้งอัตโนมัติ |
 
 ## ระบบรู้จักผู้ถามได้อย่างไร
 
@@ -333,7 +351,7 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 
 ## หน้าตรวจข้อมูลสำหรับเจ้าหน้าที่
 
-เปิดที่ `/admin` ใส่โทเคนจาก `IRFA_ADMIN_TOKEN` กับชื่อผู้ตรวจ หน้านี้มีทั้งรายการข้อมูลเดิมที่รออนุมัติและพื้นที่กักกันเอกสารใหม่
+เปิดที่ `/admin` ใส่โทเคนจาก `RISE_ADMIN_TOKEN` กับชื่อผู้ตรวจ หน้านี้มีทั้งรายการข้อมูลเดิมที่รออนุมัติและพื้นที่กักกันเอกสารใหม่
 
 รายการแรกคือข้อความ OCR และข้อความพิมพ์มือจากเอกสารสแกนที่ยังไม่มีใครตรวจ ชิ้นข้อความพวกนี้จะไม่ถูกค้นเจอจนกว่าจะกดอนุมัติ
 รายการที่สองคือตัวเลขที่ยังไม่ได้เทียบกับต้นฉบับ แต่ละแถวบอกว่าอ้างอิงเอกสารไหน ข้อไหน หน้าไหน
@@ -342,15 +360,15 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 ช่อง **ตรวจ PDF ใหม่ก่อนนำเข้าระบบ** รับไฟล์ที่เลือกจากเครื่องของผู้ดูแลเพื่อแสดงผลอ่านเบื้องต้นเท่านั้น ไม่เขียนลง `data/` หรือโฟลเดอร์เอกสารต้นฉบับ
 ช่อง **นำเข้า PDF เป็นฉบับร่าง** ใช้ไฟล์เดียวกัน แต่บันทึกไว้ในพื้นที่กักกันและสร้างชิ้นข้อความให้เปิด PDF เทียบ แก้ข้อความ และแก้ประเภทส่วนได้เมื่ออ่านครบทุกหน้า หากสถานะยัง `needs_ocr` หรือ `failed` ข้อความที่มีอยู่เป็นแบบอ่านอย่างเดียวจนกว่าการลองใหม่สำเร็จ การบันทึกการแก้ไขต้องมีชื่อผู้ตรวจ แต่ยังคงเป็นฉบับร่างและไม่อนุมัติ เมื่อผู้ตรวจเทียบกับต้นฉบับครบทุกหน้า จึงกดเผยแพร่ข้อความได้
 การเปิด PDF ต้องใช้โทเคนผู้ดูแล และรับได้เฉพาะชื่อประกาศที่ระบบรู้จักเท่านั้น
-ค่าปริยายของโฟลเดอร์ PDF คือ `../../IRFA/resource/Docs/Seminar_resource/Funds_resource` เมื่อเทียบจากโฟลเดอร์ `irfa-demo`
-ถ้าย้ายไฟล์ไปที่อื่น ให้ตั้ง `IRFA_SOURCE_DIR` เป็นพาธเต็มใน `.env` ก่อนเปิดเซิร์ฟเวอร์
+ค่าปริยายของโฟลเดอร์ PDF คือ `../../RISE/resource/Docs/Seminar_resource/Funds_resource` เมื่อเทียบจากโฟลเดอร์ `rise-demo`
+ถ้าย้ายไฟล์ไปที่อื่น ให้ตั้ง `RISE_SOURCE_DIR` เป็นพาธเต็มใน `.env` ก่อนเปิดเซิร์ฟเวอร์
 การเปิดดูไฟล์ไม่เปลี่ยน `draft` หรือ `verified` ต้องให้คนเทียบต้นฉบับครบแล้วกดอนุมัติเอง
 การอนุมัติต้องระบุชื่อผู้ตรวจและจำนวนเงินเป็นเลขจำนวนเต็มที่ไม่ติดลบ ระบบไม่รับการยืนยันตัวเลขโดยเว้นช่องจำนวนเงินว่าง
 
 ระบบบันทึกชื่อผู้ตรวจและเวลาไว้ในไฟล์ข้อมูล และสำรองไฟล์เดิมเป็น `.bak` ทุกครั้งที่เขียน
 หลังอนุมัติเอกสารใหม่ ข้อความค้นผ่านคำสำคัญและลำดับชั้นได้ในโปรเซสปัจจุบันทันที หากต้องการใช้เวกเตอร์กับข้อความชุดใหม่ให้รัน `python reindex.py` ภายหลัง
 
-ถ้าไม่ได้ตั้ง `IRFA_ADMIN_TOKEN` หน้านี้และ API ทั้งหมดของผู้ดูแลจะปิดสนิท ซึ่งเป็นค่าเริ่มต้น
+ถ้าไม่ได้ตั้ง `RISE_ADMIN_TOKEN` หน้านี้และ API ทั้งหมดของผู้ดูแลจะปิดสนิท ซึ่งเป็นค่าเริ่มต้น
 
 ## ขีดจำกัดการใช้งาน
 
@@ -358,11 +376,11 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 
 | ขีดจำกัด | ค่าเริ่มต้น | ปรับที่ |
 |---|---|---|
-| ความยาวคำถาม | 400 ตัวอักษร | `IRFA_MAX_QUESTION` |
-| ขนาด request body ทั่วไป | 65,536 ไบต์ | `IRFA_MAX_REQUEST_BODY_BYTES` |
-| จำนวนคำถามต่อคนและต่อ IP | 12 ครั้งต่อ 60 วินาที | `IRFA_RATE_LIMIT`, `IRFA_RATE_WINDOW`, `IRFA_CLIENT_RATE_LIMIT`, `IRFA_CLIENT_RATE_WINDOW` |
-| ประวัติสนทนาที่ส่งกลับมา | 8 ตา | `IRFA_MAX_HISTORY` |
-| ความเห็นต่อผู้ใช้และต่อ IP | 8 ครั้งต่อ 60 วินาที | `IRFA_FEEDBACK_RATE_LIMIT`, `IRFA_FEEDBACK_RATE_WINDOW`, `IRFA_FEEDBACK_CLIENT_RATE_LIMIT`, `IRFA_FEEDBACK_CLIENT_RATE_WINDOW` |
+| ความยาวคำถาม | 400 ตัวอักษร | `RISE_MAX_QUESTION` |
+| ขนาด request body ทั่วไป | 65,536 ไบต์ | `RISE_MAX_REQUEST_BODY_BYTES` |
+| จำนวนคำถามต่อคนและต่อ IP | 12 ครั้งต่อ 60 วินาที | `RISE_RATE_LIMIT`, `RISE_RATE_WINDOW`, `RISE_CLIENT_RATE_LIMIT`, `RISE_CLIENT_RATE_WINDOW` |
+| ประวัติสนทนาที่ส่งกลับมา | 8 ตา | `RISE_MAX_HISTORY` |
+| ความเห็นต่อผู้ใช้และต่อ IP | 8 ครั้งต่อ 60 วินาที | `RISE_FEEDBACK_RATE_LIMIT`, `RISE_FEEDBACK_RATE_WINDOW`, `RISE_FEEDBACK_CLIENT_RATE_LIMIT`, `RISE_FEEDBACK_CLIENT_RATE_WINDOW` |
 
 ตัวนับอยู่ในหน่วยความจำของโปรเซสเดียว ถ้าวันหนึ่งรันหลาย worker ต้องย้ายไป Redis
 
@@ -409,7 +427,7 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 `/api/query` และ `/api/update` เป็นชื่อที่ใช้ในภาพสถาปัตยกรรม ส่วนเส้นทาง `/v1/...` ยังคงไว้เพื่อไม่ให้เครื่องที่ติดตั้งเดโม่รุ่นเดิมหยุดทำงาน ทั้งสองชื่อเรียกโค้ดชุดเดียวกันและใช้กติกาความปลอดภัยเดียวกัน
 คำขอที่ผิดเงื่อนไขจะได้ 400 ส่วนคำขอที่ถี่เกินจะได้ 429 พร้อมบอกว่าต้องรออีกกี่วินาที
 หน้า `/admin`, API ผู้ดูแล และ `/v1/recent` ส่ง `Cache-Control: no-store, private` เพื่อกัน cache ที่แชร์กันเก็บข้อมูลอ่อนไหว
-`/v1/recent` จำกัดจำนวนแถวตาม `IRFA_AUDIT_MAX_TAIL` อ่านเฉพาะท้ายไฟล์ตาม `IRFA_AUDIT_TAIL_READ_BYTES` และข้ามบรรทัด JSONL ที่เสียหรือเขียนค้าง แทนที่จะทำให้หน้าผู้ดูแลล่ม ไฟล์จะหมุนตาม `IRFA_AUDIT_MAX_BYTES` และจำนวนสำเนา `IRFA_AUDIT_BACKUPS` เพื่อไม่ให้พื้นที่กับหน่วยความจำโตไม่จำกัด
+`/v1/recent` จำกัดจำนวนแถวตาม `RISE_AUDIT_MAX_TAIL` อ่านเฉพาะท้ายไฟล์ตาม `RISE_AUDIT_TAIL_READ_BYTES` และข้ามบรรทัด JSONL ที่เสียหรือเขียนค้าง แทนที่จะทำให้หน้าผู้ดูแลล่ม ไฟล์จะหมุนตาม `RISE_AUDIT_MAX_BYTES` และจำนวนสำเนา `RISE_AUDIT_BACKUPS` เพื่อไม่ให้พื้นที่กับหน่วยความจำโตไม่จำกัด
 
 `logs/queries.jsonl` เก็บคำถาม slots คำตอบ อ้างอิง และเวลาที่ใช้ แต่ไม่เก็บตัวโปรไฟล์ เก็บแค่ id ที่ชี้ไปหาโปรไฟล์
 เพราะประวัติการรับทุนและประเภทบุคลากรเป็นข้อมูลส่วนบุคคลตาม PDPA และมีอยู่ในระบบต้นทางอยู่แล้ว
@@ -434,7 +452,7 @@ OCR จะใช้ Tesseract ภาษาไทยถ้ามี หรือ�
 1. **ตรวจตัวเลขที่ OCR อ่านมา** เปิด PDF ต้นฉบับเทียบทีละแถวใน `/admin` ก่อนกดยืนยัน (`verify_report.py` เป็นเพียงตัวช่วย) ตราบที่ยังไม่ยืนยัน ระบบจะไม่ตอบวงเงินจากแถวนั้น
 2. **ย้ายขึ้น PostgreSQL** ตอนนี้อ่าน JSON เข้าหน่วยความจำ ของจริงคือตาราง chunks ที่มีคอลัมน์ pgvector ตาราง facts rules users profiles โครงตารางล้อกับไฟล์ JSON ได้เลย
 3. **ต่อฐานข้อมูลบุคลากร** แก้ `identity.lookup` ที่เดียว แล้วให้ reverse proxy ใส่ `X-User-Id`
-4. **ตัดคำไทยให้ดีขึ้น** `app/thai.py` ใช้พจนานุกรมโดเมนบวก trigram ของจริงควรใช้ `pip install pythainlp` แล้วเปลี่ยนไปใช้ `word_tokenize`
+4. **ตัดคำไทยให้ดีขึ้น** `app/modules/retrieval/tokenizer.py` ใช้พจนานุกรมโดเมนบวก trigram ของจริงควรใช้ `pip install pythainlp` แล้วเปลี่ยนไปใช้ `word_tokenize`
 5. **ย้ายงาน ingest ไปคิวสำหรับหลายโปรเซส** เดโมมีคิว FIFO หนึ่ง worker ต่อโปรเซส เก็บสถานะลงไฟล์ หยิบงานที่ค้างต่อเมื่อเปิดเซิร์ฟเวอร์ และมีปุ่ม retry แล้ว แต่ worker กับ lock ยังอยู่ในโปรเซสเดียว ของจริงควรใช้ durable worker queue, locking ข้ามโปรเซส, retry policy และหน้าติดตามงาน
 6. **ทำข้อมูลโครงสร้างจาก PDF ใหม่ให้ครบ** ตอนนี้แอดมินเผยแพร่ข้อความที่ตรวจแล้วได้ แต่ตัวเลข `ceiling`/`allocated`, กฎสิทธิ์ และชื่อทุนใหม่ยังไม่ถูกสร้างหรืออนุมัติอัตโนมัติ ต้องมีฟอร์มตรวจแถวข้อมูลและทดสอบคำตอบก่อนเปิดใช้เป็นข้อมูลทุนเต็มรูปแบบ
 7. **ย้ายตัวนับ rate limit ออกจากหน่วยความจำ** ถ้าวันหนึ่งรันหลาย worker ตัวนับจะแยกกันคนละอัน ต้องใช้ Redis
