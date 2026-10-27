@@ -1,10 +1,10 @@
 """Compose ports and adapters once per process; imports do not open DB/model clients."""
+from app.infrastructure.chroma.vectors import ChromaVectorRepository
 from app.infrastructure.files.storage import FileStorage
 from app.infrastructure.ollama.client import OllamaClient
 from app.infrastructure.postgres.corpus import CorpusRepository
 from app.infrastructure.postgres.repository import Repository
 from app.infrastructure.postgres.uow import Database
-from app.infrastructure.postgres.vectors import VectorRepository
 from app.modules.query.service import QueryService
 from app.modules.retrieval.service import HybridRetrieval
 
@@ -17,7 +17,7 @@ class Services:
         self.repository = Repository(self.database, self.files, settings)
         self.corpora = CorpusRepository(self.database)
         self.ollama = OllamaClient(settings)
-        self.vectors = VectorRepository(self.database)
+        self.vectors = ChromaVectorRepository(self.database, settings.chroma_dir)
         self.retrieval = HybridRetrieval(self.vectors, self.ollama, settings.semantic_query_timeout)
         self.query = QueryService(self.corpora, self.repository, self.retrieval, self.ollama)
 

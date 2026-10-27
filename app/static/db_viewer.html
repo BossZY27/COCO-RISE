@@ -1,5 +1,5 @@
 <!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>COCO-RISE Database Inspector — โครงสร้างฐานข้อมูล 4 ชั้น & PostgreSQL/pgvector</title>
+<title>COCO-RISE Database Inspector — โครงสร้างฐานข้อมูล 4 ชั้น (PostgreSQL + ChromaDB)</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:"Leelawadee UI",system-ui,sans-serif;color:#1e2d3d;background:#f4f7fb}
 header{background:#153e66;color:#fff;padding:16px clamp(16px,4vw,42px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
@@ -27,8 +27,8 @@ pre{background:#112336;color:#e4effa;padding:14px;border-radius:9px;overflow:aut
 </style></head><body>
 <header>
   <div>
-    <h1>🗄️ COCO-RISE Database Inspector (ชุดข้อมูล 4 ชั้น &amp; โครงสร้าง PostgreSQL + pgvector)</h1>
-    <p>ฐานข้อมูล SQL ในตัว (<code>data/coco_rise.db</code>) จับคู่ตรงตามแผนภาพสถาปัตยกรรมระบบและเล่มโครงงาน ข้อ 4.4 / 5.2 (ไม่ใช้ ChromaDB)</p>
+    <h1>🗄️ COCO-RISE Database Inspector (ชุดข้อมูล 4 ชั้น · PostgreSQL + ChromaDB)</h1>
+    <p>ฐานข้อมูลเชิงสัมพันธ์ PostgreSQL / SQLite (<code>data/coco_rise.db</code>) คู่กับ Vector Database <strong>ChromaDB</strong> (<code>data/chroma_db</code> · คอลเลกชัน <code>coco_rise_chunks</code>)</p>
   </div>
   <a class="back" href="/">← กลับหน้าถาม-ตอบ</a>
 </header>
@@ -36,7 +36,7 @@ pre{background:#112336;color:#e4effa;padding:14px;border-radius:9px;overflow:aut
   <div class="cards" id="cards"></div>
   <div class="tabs" id="tabs">
     <button type="button" data-table="document_registry" class="active">ชั้นที่ 1: ทะเบียนเอกสาร (document_registry)</button>
-    <button type="button" data-table="document_chunks">ชั้นที่ 2: ข้อความ + BM25 + pgvector (document_chunks)</button>
+    <button type="button" data-table="document_chunks">ชั้นที่ 2: ข้อความ + BM25 + ChromaDB (document_chunks)</button>
     <button type="button" data-table="fund_facts">ชั้นที่ 3.1: ข้อเท็จจริงวงเงิน (fund_facts)</button>
     <button type="button" data-table="eligibility_rules">ชั้นที่ 3.2: กฎเงื่อนไข (eligibility_rules)</button>
     <button type="button" data-table="eval_dataset">ชั้นที่ 4: ชุดคำถามทดสอบ (eval_dataset)</button>
@@ -49,7 +49,7 @@ pre{background:#112336;color:#e4effa;padding:14px;border-radius:9px;overflow:aut
   </div>
   <div class="table-wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
   <details class="schema" open>
-    <summary>📄 ดูคำสั่งสร้างตาราง PostgreSQL + pgvector (app/infrastructure/postgres/postgres_schema.sql)</summary>
+    <summary>📄 ดูคำสั่งสร้างตาราง PostgreSQL + โครงสร้างเชื่อม ChromaDB (app/infrastructure/postgres/postgres_schema.sql)</summary>
     <pre id="schemaSql">กำลังโหลด...</pre>
   </details>
 </main>
@@ -62,9 +62,9 @@ async function load() {
   const data = await (await fetch('/v1/db/overview?' + params.toString())).json();
   const c = data.counts, s = data.stats;
   document.getElementById('cards').innerHTML = `
-    <div class="card"><div class="label">ชั้นที่ 1 ทะเบียนเอกสาร</div><div class="val">${c.document_registry} ฉบับ</div><div class="sub">หลักเกณฑ์กลาง + ประกาศประจำปี</div></div>
-    <div class="card"><div class="label">ชั้นที่ 2 ข้อความ + pgvector</div><div class="val">${c.document_chunks} แถว</div><div class="sub">ยืนยันแล้ว ${s.verified_chunks} แถว · เวกเตอร์ ${s.vector_chunks} แถว (${s.vector_model})</div></div>
-    <div class="card"><div class="label">ชั้นที่ 3 ข้อเท็จจริง &amp; กฎ</div><div class="val">${c.fund_facts} ข้อเท็จจริง / ${c.eligibility_rules} กฎ</div><div class="sub">ยืนยันแล้ว ${s.verified_facts} แถว (แยกเพดาน/จัดสรรรายปี)</div></div>
+    <div class="card"><div class="label">ชั้นที่ 1 ทะเบียนเอกสาร (PostgreSQL)</div><div class="val">${c.document_registry} ฉบับ</div><div class="sub">หลักเกณฑ์กลาง + ประกาศประจำปี</div></div>
+    <div class="card"><div class="label">ชั้นที่ 2 ข้อความ + ChromaDB</div><div class="val">${c.document_chunks} แถว</div><div class="sub">ยืนยันแล้ว ${s.verified_chunks} แถว · ChromaDB (${s.chroma_collection || 'coco_rise_chunks'}) ${s.vector_chunks} เวกเตอร์</div></div>
+    <div class="card"><div class="label">ชั้นที่ 3 ข้อเท็จจริง &amp; กฎ (PostgreSQL)</div><div class="val">${c.fund_facts} ข้อเท็จจริง / ${c.eligibility_rules} กฎ</div><div class="sub">ยืนยันแล้ว ${s.verified_facts} แถว (แยกเพดาน/จัดสรรรายปี)</div></div>
     <div class="card"><div class="label">ชั้นที่ 4 ชุดคำถาม &amp; โปรไฟล์</div><div class="val">${c.eval_dataset} ข้อทดสอบ</div><div class="sub">โปรไฟล์จำลอง ${c.applicant_profiles} รายการ (ปกปิดตาม PDPA)</div></div>
   `;
   document.getElementById('schemaSql').textContent = data.postgres_schema || '';

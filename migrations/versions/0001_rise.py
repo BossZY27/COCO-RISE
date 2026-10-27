@@ -1,4 +1,4 @@
-"""RISE MVP PostgreSQL/pgvector schema."""
+"""RISE MVP PostgreSQL schema (paired with ChromaDB vector index)."""
 from alembic import op
 from app.infrastructure.postgres.models import Base
 
@@ -7,7 +7,6 @@ down_revision = None
 
 
 def upgrade():
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     for name in ("core", "knowledge", "retrieval", "audit"):
         op.execute(f"CREATE SCHEMA IF NOT EXISTS {name}")
     Base.metadata.create_all(op.get_bind())

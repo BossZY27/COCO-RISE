@@ -22,7 +22,7 @@ class HybridRetrieval:
                         raise ValueError("Embedding model revision changed; rebuild the index")
                     vector = self.embeddings.embed([question], timeout=self.timeout)[0]
                     semantic = self.vectors.search(vector, year, corpus.revision)
-                    method = "bm25+pgvector"
+                    method = "bm25+chromadb"
                 except (OSError, ValueError, RuntimeError, httpx.HTTPError):
                     self.failed_until = time.monotonic() + 30
             return store.rrf([keyword, semantic], top_k=8), method

@@ -1,10 +1,8 @@
 -- =============================================================================
--- COCO-RISE (IRFA) Database Schema for PostgreSQL + pgvector
--- อ้างอิงตามเล่มเค้าโครงโครงงาน ข้อ 4.4, ข้อ 5.2 และแผนภาพ IRFA-สถาปัตยกรรมระบบ.png
--- (ในโหมดสาธิต ระบบซิงก์โครงสร้างเดียวกันนี้ลงฐานข้อมูล SQL ในตัวที่ data/coco_rise.db)
+-- COCO-RISE (IRFA) Database Schema for PostgreSQL + ChromaDB Vector Store
+-- PostgreSQL เก็บตารางข้อมูลเชิงสัมพันธ์ 4 ชั้น (Relational Tables)
+-- ChromaDB (data/chroma_db · collection 'coco_rise_chunks') เก็บเวกเตอร์ bge-m3 (1,024 มิติ)
 -- =============================================================================
-
-CREATE EXTENSION IF NOT EXISTS vector;
 
 -- -----------------------------------------------------------------------------
 -- ชั้นที่ 1: ทะเบียนเอกสารต้นฉบับ (Document Registry / Metadata)
@@ -23,8 +21,8 @@ CREATE TABLE IF NOT EXISTS document_registry (
 );
 
 -- -----------------------------------------------------------------------------
--- ชั้นที่ 2: ข้อความที่ตรวจแล้วและดัชนีเวกเตอร์ (chunks + BM25 + pgvector)
--- แบ่งตามข้อและแถวตาราง พร้อมเลขหน้า และเวกเตอร์ bge-m3 (1,024 มิติ)
+-- ชั้นที่ 2: ข้อความที่ตรวจแล้ว (document_chunks ใน PostgreSQL + เวกเตอร์ใน ChromaDB)
+-- แบ่งตามข้อและแถวตาราง พร้อมเลขหน้า และเชื่อมกับ ChromaDB collection 'coco_rise_chunks'
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS document_chunks (
     id              VARCHAR(64) PRIMARY KEY,
@@ -36,14 +34,13 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     text            TEXT NOT NULL,
     status          VARCHAR(32) NOT NULL DEFAULT 'active',
     verified        BOOLEAN NOT NULL DEFAULT FALSE,
-    embedding       vector(1024) NULL
+    chroma_id       VARCHAR(64) NULL,     -- อ้างอิง ID ใน ChromaDB collection 'coco_rise_chunks'
+    vector_model    VARCHAR(64) NULL DEFAULT 'bge-m3:latest',
+    vector_dim      INT NOT NULL DEFAULT 1024
 );
 
 CREATE INDEX IF NOT EXISTS idx_document_chunks_filter
     ON document_chunks (verified, status, fiscal_year);
-
-CREATE INDEX IF NOT EXISTS idx_document_chunks_embedding_hnsw
-    ON document_chunks USING hnsw (embedding vector_cosine_ops);
 
 -- -----------------------------------------------------------------------------
 -- ชั้นที่ 3 (ส่วนที่ 1): ข้อเท็จจริงวงเงินแยกตามประเภท (facts)

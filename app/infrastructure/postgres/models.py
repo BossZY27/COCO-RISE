@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, Index,
                         Integer, Numeric, String, Text, UniqueConstraint, func, text)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -175,14 +174,6 @@ class Generation(Identified, Base):
     model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("retrieval.embedding_models.id"))
     corpus_revision: Mapped[int] = mapped_column(BigInteger)
     status: Mapped[str] = mapped_column(String(16), default="building")
-
-
-class Embedding(Base):
-    __tablename__ = "chunk_embeddings"
-    __table_args__ = {"schema": "retrieval"}
-    generation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("retrieval.index_generations.id"), primary_key=True)
-    chunk_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("knowledge.chunks.id"), primary_key=True)
-    vector: Mapped[list[float]] = mapped_column(Vector(1024))
 
 
 class Job(Identified, Base):

@@ -21,6 +21,7 @@ eval_with_llm.txt
 eval_clean.txt
 data/embeddings.json
 data/coco_rise.db
+data/chroma_db/
 data/ingestion/
 data/private/
 todo/*

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     embed_model: str = "bge-m3"
     admin_token: str = ""
     files_dir: Path = Path("data/private")
+    chroma_dir: Path = Path("data/chroma_db")
     source_dir: Path = Path("funds-data")
     fiscal_year: int = 2569
     llm_timeout: float = Field(30, gt=0, le=40)
