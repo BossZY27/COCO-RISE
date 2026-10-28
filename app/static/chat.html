@@ -39,10 +39,10 @@ textarea{min-width:0;flex:1;min-height:42px;max-height:130px;resize:none;border:
 </style></head><body>
 <div class="app"><aside class="side" aria-label="รายการแชต"><div class="brand">COCO-RISE <span>demo</span></div>
 <button class="new" type="button" id="newChat">＋ แชตใหม่</button>
-<a class="new" href="/db" style="display:block;text-decoration:none;margin-top:8px;background:#245785">🗄️ ดูตารางฐานข้อมูล 4 ชั้น (/db)</a>
 <div class="side-label">แชตในเบราว์เซอร์นี้</div>
 <div id="sessions" class="sessions"></div><div class="side-note">บทสนทนาเก็บเฉพาะเบราว์เซอร์นี้ ไม่ซิงก์ข้ามเครื่อง</div></aside>
 <main class="main"><header class="top"><div class="top-row"><h1 id="chatTitle">ถามเรื่องทุนวิจัย</h1>
+<label class="persona">โมเดลตอบ <select id="modelSelect" aria-label="เลือกโมเดลตอบ"><option value="qwen3:4b">qwen3:4b (LLM RAG)</option><option value="template">Template ที่ตรวจแล้ว (ปลอดภัย)</option></select></label>
 <label class="persona">โปรไฟล์สมมติ (ใช้ทดสอบกฎเท่านั้น) <select id="persona" aria-label="โปรไฟล์สมมติสำหรับทดสอบกฎ"></select></label></div>
 <p class="status" id="status">กำลังตรวจความพร้อมของข้อมูล...</p>
 <p class="status">คำตอบอ้างอิงข้อมูลที่ตรวจแล้วเท่านั้น ถ้าเอกสารยังไม่ยืนยัน ระบบจะบอกตรง ๆ</p>
@@ -51,7 +51,7 @@ textarea{min-width:0;flex:1;min-height:42px;max-height:130px;resize:none;border:
 <details class="architecture"><summary>ระบบทำงานอย่างไร</summary><div class="flow">
 <div><strong>1 วิเคราะห์คำถาม</strong>จับชื่อทุน เลขข้อ ปีงบ และเรื่องที่ต้องการทราบ</div>
 <div><strong>2 Hybrid retrieval</strong>ค้นคำตรง ความหมาย ลำดับชั้น และข้อมูลที่ตรวจแล้ว</div>
-<div><strong>3 ประกอบคำตอบ</strong>เดโมใช้ข้อมูลที่ตรวจแล้วประกอบคำตอบด้วยโปรแกรม</div>
+<div><strong>3 สร้างคำตอบด้วย LLM</strong>ใช้โมเดล qwen3:4b เรียบเรียงคำตอบจากหลักฐานที่ตรวจแล้ว</div>
 <div><strong>4 ตรวจคำตอบและอ้างอิง</strong>ไม่ผ่านการตรวจจะไม่ส่งคำตอบออกไป</div>
 </div><p class="status" style="padding:0 11px 9px;margin:0">ปัจจุบันใช้ JSON และเวกเตอร์ในหน่วยความจำ ส่วน PostgreSQL/pgvector ในเล่มเป็นแผนระยะถัดไป ยังไม่เชื่อมฐานข้อมูลบุคลากร โปรไฟล์ด้านบนเป็นข้อมูลสมมติสำหรับทดสอบกฎ ไม่ใช่ระบบจับคู่หรือแนะนำทุน</p></details></header>
 <section class="thread" id="thread" aria-label="บทสนทนา"><div class="thread-inner" id="out"></div></section>
@@ -120,9 +120,10 @@ function resolveTurnBadge(turn) {
   if (!turn.done) return null;
   if (turn.error) return {cls: 'err', text: '⚠️ ข้อผิดพลาดการเชื่อมต่อ'};
   const src = String(turn.answerSource || '');
+  const meta = String(turn.meta || '');
   const model = turn.selectedModel || (src.includes(':') ? src.split(':').slice(1).join(':') : null);
   const slotBy = turn.slotExtractedBy ? ` · สกัดคำถามด้วย ${turn.slotExtractedBy}` : '';
-  if (src.startsWith('llm') || (model && !src.startsWith('typed_claim'))) {
+  if (src.startsWith('llm') || (model && !src.startsWith('typed_claim')) || meta.includes('LLM') || meta.includes('qwen3')) {
     return {cls: 'llm', text: `🤖 โมเดลสร้างคำตอบ: ${model || 'qwen3:4b'} (LLM RAG + ผ่าน Verifier)${slotBy}`};
   }
   if (src.startsWith('typed_claim')) {
@@ -200,7 +201,7 @@ async function ask() {
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 40000);
   try {
     const res = await fetch('/api/query', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({question: q, persona_id: personaId, history, context: chat.context}), signal: controller.signal});
+      body: JSON.stringify({question: q, persona_id: personaId, model: document.getElementById('modelSelect')?.value || 'qwen3:4b', history, context: chat.context}), signal: controller.signal});
     if (!res.ok) { const err = await res.json().catch(() => ({detail: 'เรียกเซิร์ฟเวอร์ไม่สำเร็จ'}));
       turn.answer = err.detail || 'เรียกเซิร์ฟเวอร์ไม่สำเร็จ'; turn.error = true; return; }
     const e = await res.json();

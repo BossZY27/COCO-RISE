@@ -685,14 +685,13 @@ def may_generate_llm_answer(
         return False
     if not llm.enabled():
         return False
-    if not citations or any(not store.is_verified(f) for f in used):
-        return False
     if not slots:
         return False
     intent = slots.get("intent")
+    if (not citations and intent != "smalltalk") or any(not store.is_verified(f) for f in used):
+        return False
     if intent in (
         "clarify_reference",
-        "smalltalk",
         "history",
     ):
         return False
