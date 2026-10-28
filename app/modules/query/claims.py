@@ -708,10 +708,26 @@ def rag_generation_messages(
     """Build compact RAG prompt messages for natural Thai answer synthesis (zero PII sent to LLM)."""
     fund_hint = slots.get("fund") or "ข้อมูลตามประกาศ"
     safe_question = limits.redact_pii(question)
+    chunks = (evidence or {}).get("chunks") or []
+    vector_context_lines = [
+        f"- [{c.get('doc', '')} {c.get('clause', '')} หน้า {c.get('page', '')}] {str(c.get('text', '')).strip()[:220]}"
+        for c in chunks[:3]
+        if isinstance(c, dict) and c.get("text")
+    ]
+    vector_block = (
+        "บริบทที่ค้นคืนจาก Vector Search (bge-m3 + ChromaDB) และ Hybrid RRF:\n"
+        + "\n".join(vector_context_lines)
+        + "\n"
+        if vector_context_lines
+        else ""
+    )
+    fact_summary = (reference_answer or "").strip()[:350]
     user_prompt = (
         f"คำถาม: {safe_question}\n"
         f"หัวข้อหลักฐาน: {fund_hint}\n"
-        "คืนค่า JSON {\"lead\": \"...\"} เป็นวลีเปิดนำคำตอบที่เป็นทางการ (ห้ามตั้งคำถาม ห้ามใส่ตัวเลข):"
+        f"{vector_block}"
+        f"ข้อเท็จจริงที่ตรวจสอบแล้ว: {fact_summary}\n"
+        "คืนค่า JSON {\"lead\": \"...\"} เป็นวลีเปิดนำคำตอบที่เป็นทางการและสอดคล้องกับบริบทข้างต้น (ห้ามตั้งคำถาม ห้ามใส่ตัวเลข):"
     )
     return [
         {"role": "system", "content": RAG_GENERATOR_SYSTEM_PROMPT},

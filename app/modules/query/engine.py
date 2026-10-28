@@ -468,7 +468,7 @@ def semantic_backend() -> str:
 async def retrieve(slots: dict) -> dict:
     query = slots["standalone_question"]
     year = slots["fiscal_year"]
-    if slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation", "clarify_reference"):
+    if ANSWER_MODE != "llm" and slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation", "clarify_reference"):
         # The catalogue answer and citations are built directly from the verified
         # structured rows. Searching passages or embedding the query cannot change it.
         return {"chunks": [], "facts": [], "semantic_by": "not_needed",
