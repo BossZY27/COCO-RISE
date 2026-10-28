@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
-load_dotenv(override=False)
+import sys
+if "pytest" not in sys.modules:
+    load_dotenv(override=False)
 
 from .modules.legacy import api as compat
 from .bootstrap import Services

@@ -689,19 +689,11 @@ def may_generate_llm_answer(
         return False
     if not slots:
         return False
-    if (evidence.get("pending_review") and slots.get("intent") == "amount") or evidence.get("ceiling_fallback"):
-        return False
     intent = slots.get("intent")
     if intent in (
-        "list",
-        "catalogue_details",
         "clarify_reference",
         "smalltalk",
-        "open_now",
-        "recommendation",
         "history",
-        "application",
-        "hypothetical",
     ):
         return False
     if slots.get("alternatives") or slots.get("clause_conflict"):
@@ -749,9 +741,12 @@ def validate_llm_prose(
     if slots.get("intent") == "details" and "รอเจ้าหน้าที่ตรวจ" in reference_answer:
         if "รอ" not in cleaned or "อนุมัติ" not in cleaned:
             problems.append("คำตอบจากโมเดลตกหล่นสถานะเงื่อนไขที่ยังรอเจ้าหน้าที่ตรวจและอนุมัติ")
-    if not used:
+    if not used and slots.get("intent") not in ("list", "catalogue_details", "open_now", "recommendation"):
         allowed_funds = {fund} if fund else set()
-        strays = [f for f in store.view().FUNDS if f not in allowed_funds and f in cleaned]
+        strays = [
+            f for f in store.view().FUNDS
+            if f not in allowed_funds and f not in reference_answer and f in cleaned
+        ]
         if strays:
             problems.append(f"คำตอบจากโมเดลกล่าวถึงทุนอื่นที่ไม่อยู่ในคำถาม ({strays[0]})")
     return problems
@@ -778,7 +773,7 @@ def request_llm_rag_answer(
         raw = llm.chat(
             messages,
             model=chosen_model,
-            max_tokens=48,
+            max_tokens=64,
             json_mode=True,
             timeout=timeout or CLAIM_TIMEOUT,
         )
@@ -819,7 +814,13 @@ def request_llm_rag_answer(
                         if lead_clean:
                             answer_text = f"{lead_clean} {reference_answer}"
         except Exception:
-            answer_text = ""
+            m = re.search(r'"lead"\s*:\s*"([^"\r\n]+)', cleaned_json)
+            if m:
+                lead_clean = re.sub(r"\d+", "", m.group(1)).strip().rstrip(":：")
+                if lead_clean:
+                    answer_text = f"{lead_clean} {reference_answer}"
+            else:
+                answer_text = ""
     if not answer_text:
         return False, ["โมเดลไม่ได้คืนข้อความคำตอบใน JSON {\"answer\": \"...\"}"], None, chosen_model
     problems = validate_llm_prose(answer_text, slots, used, reference_answer)
