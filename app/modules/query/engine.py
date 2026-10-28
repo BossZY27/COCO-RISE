@@ -441,9 +441,6 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
 def _semantic(query: str, year: int | None) -> tuple[list[dict], str]:
     """Real vectors when the embedding model answers, trigrams when it does not."""
     global _SEMANTIC_FAILURE_UNTIL
-    if False:
-        # On CPU-only Ollama, calling bge-m3 unloads the active chat LLM and adds ~10s reload latency.
-        return store.semantic_search(query, year, 10), "trigram"
     if store.vectors_ready():
         # A complete on-disk cache can still be present while Ollama is down.
         # Without a circuit breaker every question would pay the transport
