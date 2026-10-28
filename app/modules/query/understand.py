@@ -13,7 +13,7 @@ from app.modules.knowledge import corpus as store
 # Spellings people type for the same word. เเ is two sara e typed for แ, which looks the same on screen,
 # and ไหร่ and มั้ย are the spoken forms of ไร and ไหม. The word lists below are written in the right-hand
 # form, so "ปิดรับเมื่อไหร่" reaches the same answer as "ปิดรับเมื่อไร".
-SPELLINGS = (("​", ""), ("เเ", "แ"), ("ไหร่", "ไร"), ("มั๊ย", "ไหม"), ("มั้ย", "ไหม"))
+SPELLINGS = (("​", ""), ("เเ", "แ"), ("ทุนอไร", "ทุนอะไร"), ("อะรัย", "อะไร"), ("ไหร่", "ไร"), ("มั๊ย", "ไหม"), ("มั้ย", "ไหม"))
 _THAI_DIGITS = str.maketrans("๐๑๒๓๔๕๖๗๘๙", "0123456789")
 # How Thai asks yes or no after ได้. One list, because a form missing from one of three copies once sent
 # "คนนอกขอทุนได้หรือเปล่า" to the amount answer while "ได้ไหม" reached the eligibility one. บ่ is the Isan

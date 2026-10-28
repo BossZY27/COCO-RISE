@@ -50,11 +50,12 @@ def thai_fiscal_year(now: datetime | None = None) -> int:
 # One question at a time reaches the model. A second caller waits rather than halving the speed of both,
 # because on a CPU two answers in parallel take about twice as long each and both miss the 40 second budget.
 LLM_SLOTS = asyncio.Semaphore(int(os.getenv("RISE_LLM_CONCURRENCY", "1")))
-_DEFAULT_ANSWER_MODE = "verified_template" if "pytest" in sys.modules else "llm"
-ANSWER_MODE = os.getenv("RISE_ANSWER_MODE", os.getenv("IRFA_ANSWER_MODE", _DEFAULT_ANSWER_MODE)).strip() or _DEFAULT_ANSWER_MODE
-_DEFAULT_SLOT_FALLBACK = "off" if "pytest" in sys.modules else "on"
-SLOT_LLM_FALLBACK = os.getenv("RISE_SLOT_LLM_FALLBACK", os.getenv("IRFA_SLOT_LLM_FALLBACK", _DEFAULT_SLOT_FALLBACK)).strip().lower() in ("1", "on", "true", "yes")
-SEMANTIC_QUERY_TIMEOUT = max(0.1, float(os.getenv("RISE_SEMANTIC_QUERY_TIMEOUT", "2")))
+_IN_PYTEST = "pytest" in sys.modules
+_DEFAULT_ANSWER_MODE = "verified_template" if _IN_PYTEST else "llm"
+ANSWER_MODE = _DEFAULT_ANSWER_MODE if _IN_PYTEST else (os.getenv("RISE_ANSWER_MODE", os.getenv("IRFA_ANSWER_MODE", _DEFAULT_ANSWER_MODE)).strip() or _DEFAULT_ANSWER_MODE)
+_DEFAULT_SLOT_FALLBACK = "off" if _IN_PYTEST else "on"
+SLOT_LLM_FALLBACK = False if _IN_PYTEST else (os.getenv("RISE_SLOT_LLM_FALLBACK", os.getenv("IRFA_SLOT_LLM_FALLBACK", _DEFAULT_SLOT_FALLBACK)).strip().lower() in ("1", "on", "true", "yes"))
+SEMANTIC_QUERY_TIMEOUT = 2.0 if _IN_PYTEST else max(0.1, float(os.getenv("RISE_SEMANTIC_QUERY_TIMEOUT", "8")))
 SEMANTIC_RETRY_SECONDS = max(1.0, float(os.getenv("RISE_SEMANTIC_RETRY_SECONDS", "30")))
 _SEMANTIC_CIRCUIT_LOCK = threading.Lock()
 _SEMANTIC_FAILURE_UNTIL = 0.0
@@ -441,9 +442,6 @@ def analyze(question: str, history: list[str] | None = None, profile: dict | Non
 def _semantic(query: str, year: int | None) -> tuple[list[dict], str]:
     """Real vectors when the embedding model answers, trigrams when it does not."""
     global _SEMANTIC_FAILURE_UNTIL
-    if ANSWER_MODE in ("llm", "typed_claim"):
-        # On CPU-only Ollama, calling bge-m3 unloads the active chat LLM and adds ~10s reload latency.
-        return store.semantic_search(query, year, 10), "trigram"
     if store.vectors_ready():
         # A complete on-disk cache can still be present while Ollama is down.
         # Without a circuit breaker every question would pay the transport
@@ -470,7 +468,7 @@ def semantic_backend() -> str:
 async def retrieve(slots: dict) -> dict:
     query = slots["standalone_question"]
     year = slots["fiscal_year"]
-    if slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation", "clarify_reference"):
+    if ANSWER_MODE != "llm" and slots["intent"] in ("list", "catalogue_details", "open_now", "recommendation", "clarify_reference"):
         # The catalogue answer and citations are built directly from the verified
         # structured rows. Searching passages or embedding the query cannot change it.
         return {"chunks": [], "facts": [], "semantic_by": "not_needed",

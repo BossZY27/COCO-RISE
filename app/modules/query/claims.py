@@ -574,6 +574,11 @@ def slot_extraction_messages(question: str, known_fund: str | None = None) -> li
     else:
         candidates = [f for f in store.view().FUNDS if _fund_grounded_in_question(f, safe_question)]
     funds_hint = f"ทุนที่เกี่ยวข้อง: {', '.join(candidates)}\n" if candidates else ""
+    guidance = (
+        "หากผู้ถามระบุแต่ชื่อทุนโดยยังไม่ระบุคำกริยาถามชัดเจน ให้เลือก intent เป็น details\n"
+        if candidates
+        else "หากถามว่ามีทุนอะไรบ้าง ให้เลือก intent เป็น list หากไม่ระบุชื่อทุนให้ตอบ intent เป็น null\n"
+    )
     return [
         {"role": "system", "content": SLOT_SYSTEM_PROMPT},
         {
@@ -581,7 +586,7 @@ def slot_extraction_messages(question: str, known_fund: str | None = None) -> li
             "content": (
                 f"{funds_hint}"
                 f"คำถาม: {safe_question}\n"
-                "หากผู้ถามระบุแต่ชื่อทุนโดยยังไม่ระบุคำกริยาถามชัดเจน ให้เลือก intent เป็น details\n"
+                f"{guidance}"
                 "คืนค่า JSON สล็อตของคำถามนี้เท่านั้น"
             ),
         },
@@ -687,15 +692,7 @@ def may_generate_llm_answer(
         return False
     if not slots:
         return False
-    intent = slots.get("intent")
-    if (not citations and intent != "smalltalk") or any(not store.is_verified(f) for f in used):
-        return False
-    if intent in (
-        "clarify_reference",
-        "history",
-    ):
-        return False
-    if slots.get("alternatives") or slots.get("clause_conflict"):
+    if any(not store.is_verified(f) for f in used):
         return False
     return True
 
@@ -711,10 +708,26 @@ def rag_generation_messages(
     """Build compact RAG prompt messages for natural Thai answer synthesis (zero PII sent to LLM)."""
     fund_hint = slots.get("fund") or "ข้อมูลตามประกาศ"
     safe_question = limits.redact_pii(question)
+    chunks = (evidence or {}).get("chunks") or []
+    vector_context_lines = [
+        f"- [{c.get('doc', '')} {c.get('clause', '')} หน้า {c.get('page', '')}] {str(c.get('text', '')).strip()[:220]}"
+        for c in chunks[:3]
+        if isinstance(c, dict) and c.get("text")
+    ]
+    vector_block = (
+        "บริบทที่ค้นคืนจาก Vector Search (bge-m3 + ChromaDB) และ Hybrid RRF:\n"
+        + "\n".join(vector_context_lines)
+        + "\n"
+        if vector_context_lines
+        else ""
+    )
+    fact_summary = (reference_answer or "").strip()[:350]
     user_prompt = (
         f"คำถาม: {safe_question}\n"
         f"หัวข้อหลักฐาน: {fund_hint}\n"
-        "คืนค่า JSON {\"lead\": \"...\"} เป็นวลีเปิดนำคำตอบที่เป็นทางการ (ห้ามตั้งคำถาม ห้ามใส่ตัวเลข):"
+        f"{vector_block}"
+        f"ข้อเท็จจริงที่ตรวจสอบแล้ว: {fact_summary}\n"
+        "คืนค่า JSON {\"lead\": \"...\"} เป็นวลีเปิดนำคำตอบที่เป็นทางการและสอดคล้องกับบริบทข้างต้น (ห้ามตั้งคำถาม ห้ามใส่ตัวเลข):"
     )
     return [
         {"role": "system", "content": RAG_GENERATOR_SYSTEM_PROMPT},
@@ -801,7 +814,10 @@ def request_llm_rag_answer(
                     if isinstance(lead, str) and lead.strip():
                         lead_clean = re.sub(r"\d+", "", lead).strip().rstrip(":：")
                         allowed_fund = slots.get("fund")
-                        bad_tokens = ("?", "？", "ไหม", "หรือไม่", "อย่างไร", "เพื่อน", "คือการ", "หมายถึงการ")
+                        bad_tokens = (
+                            "?", "？", "ไหม", "หรือไม่", "อย่างไร", "เพื่อน",
+                            "คือการ", "หมายถึงการ", "ผู้สมัคร", "ผู้ขอ",
+                        )
                         if any(tok in lead_clean for tok in bad_tokens) or any(
                             f != allowed_fund and f in lead_clean for f in store.view().FUNDS
                         ):
@@ -820,6 +836,13 @@ def request_llm_rag_answer(
                     answer_text = f"{lead_clean} {reference_answer}"
             else:
                 answer_text = ""
+    if not answer_text and raw is not None:
+        fallback_lead = (
+            f"สำหรับ{slots.get('fund')} สรุปข้อมูลตามประกาศได้ดังนี้ครับ"
+            if slots.get("fund")
+            else "จากข้อมูลในระบบ สรุปได้ดังนี้ครับ"
+        )
+        answer_text = f"{fallback_lead} {reference_answer}"
     if not answer_text:
         return False, ["โมเดลไม่ได้คืนข้อความคำตอบใน JSON {\"answer\": \"...\"}"], None, chosen_model
     problems = validate_llm_prose(answer_text, slots, used, reference_answer)

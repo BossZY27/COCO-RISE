@@ -86,6 +86,10 @@ def _warm_embeddings() -> None:
     """Prepare optional vectors without holding up the public API."""
     try:
         STATUS["embeddings"] = store.build_embeddings()
+        try:
+            llm.embed(["ทุนวิจัย"], timeout=30)
+        except Exception:
+            pass
     except Exception as exc:
         STATUS["embeddings"] = f"ไม่สำเร็จ: {type(exc).__name__} (จะใช้การค้นแบบสำรองแทน)"
         LOGGER.exception("Embedding warmup failed; trigram retrieval remains available")
