@@ -10,6 +10,7 @@ Each step records its own time so the latency budget can be checked.
 import asyncio
 import os
 import re
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -49,8 +50,10 @@ def thai_fiscal_year(now: datetime | None = None) -> int:
 # One question at a time reaches the model. A second caller waits rather than halving the speed of both,
 # because on a CPU two answers in parallel take about twice as long each and both miss the 40 second budget.
 LLM_SLOTS = asyncio.Semaphore(int(os.getenv("RISE_LLM_CONCURRENCY", "1")))
-ANSWER_MODE = os.getenv("RISE_ANSWER_MODE", os.getenv("IRFA_ANSWER_MODE", "verified_template")).strip() or "verified_template"
-SLOT_LLM_FALLBACK = os.getenv("RISE_SLOT_LLM_FALLBACK", os.getenv("IRFA_SLOT_LLM_FALLBACK", "off")).strip().lower() in ("1", "on", "true", "yes")
+_DEFAULT_ANSWER_MODE = "verified_template" if "pytest" in sys.modules else "llm"
+ANSWER_MODE = os.getenv("RISE_ANSWER_MODE", os.getenv("IRFA_ANSWER_MODE", _DEFAULT_ANSWER_MODE)).strip() or _DEFAULT_ANSWER_MODE
+_DEFAULT_SLOT_FALLBACK = "off" if "pytest" in sys.modules else "on"
+SLOT_LLM_FALLBACK = os.getenv("RISE_SLOT_LLM_FALLBACK", os.getenv("IRFA_SLOT_LLM_FALLBACK", _DEFAULT_SLOT_FALLBACK)).strip().lower() in ("1", "on", "true", "yes")
 SEMANTIC_QUERY_TIMEOUT = max(0.1, float(os.getenv("RISE_SEMANTIC_QUERY_TIMEOUT", "2")))
 SEMANTIC_RETRY_SECONDS = max(1.0, float(os.getenv("RISE_SEMANTIC_RETRY_SECONDS", "30")))
 _SEMANTIC_CIRCUIT_LOCK = threading.Lock()

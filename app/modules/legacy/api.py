@@ -469,7 +469,7 @@ def _selected_model(name: str | None) -> str | None:
         return None
     if pipeline.ANSWER_MODE not in ("llm", "typed_claim"):
         raise HTTPException(status_code=400, detail="โหมดปลอดภัยยังไม่เปิดให้โมเดลเขียนคำตอบอิสระ")
-    allowed = {m["name"] for m in llm.answer_models()} | {llm.SMALL, llm.MAIN}
+    allowed = {m["name"] for m in llm.answer_models()} | {llm.SMALL, llm.MAIN, "template"}
     if name not in allowed:
         raise HTTPException(status_code=400, detail="ไม่พบโมเดลที่เลือกในรายการที่ระบบอนุญาต")
     return name
