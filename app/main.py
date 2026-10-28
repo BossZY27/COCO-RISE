@@ -27,7 +27,16 @@ from .modules.knowledge.context import use_corpus
 async def lifespan(app):
     settings = Settings()
     app.state.settings = settings
-    app.state.services = Services(settings) if settings.database_url else None
+    services = Services(settings) if settings.database_url else None
+    if services is not None and "pytest" not in sys.modules:
+        try:
+            if not services.database.ready() or not services.corpora.load().CHUNKS:
+                services.close()
+                services = None
+        except Exception:
+            services.close()
+            services = None
+    app.state.services = services
     if app.state.services is not None:
         app.state.services.legacy = LegacyAdapter(app.state.services)
         try:
