@@ -30,7 +30,7 @@ button,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacit
 .model-badge.claim{background:#e8f1fb;color:#184a7c;border-color:#c4dbf5}
 .model-badge.tpl{background:#f1f4f8;color:#475c70;border-color:#d8e1eb}
 .model-badge.err{background:#fdecec;color:#982b2b;border-color:#f5c5c5}
-.ans{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere}.cite{color:#a44836;font-size:13px;margin-top:10px;line-height:1.5}.meta{color:#76879a;font-size:12px;margin-top:8px;line-height:1.5;white-space:pre-wrap}.error .ans{color:#a43d32}
+.ans{line-height:1.7;overflow-wrap:anywhere}.ans p{margin:0 0 12px}.ans h1,.ans h2,.ans h3,.ans h4,.ans h5,.ans h6{font-size:1.05em;margin:18px 0 8px}.ans ul,.ans ol{margin:8px 0 16px;padding-left:26px}.ans li{margin:5px 0}.ans pre{white-space:pre-wrap;background:#edf2f7;padding:12px;border-radius:8px}.ans code{background:#edf2f7;border-radius:4px;padding:2px 4px}.ans>:first-child{margin-top:0}.cite{color:#a44836;font-size:13px;margin-top:10px;line-height:1.5}.meta{color:#76879a;font-size:12px;margin-top:8px;line-height:1.5;white-space:pre-wrap}.error .ans{color:#a43d32}
 .fb{margin-top:10px}.fb button{border:0;border-radius:8px;background:#eef3f7;color:#2e4e69;padding:6px 10px;font-size:12px;margin-right:6px}.fb span{font-size:12px;color:#16803e}
 .composer{background:#fff;border-top:1px solid #e2eaf2;padding:12px clamp(16px,5vw,60px) 15px}.input-row{display:flex;align-items:flex-end;gap:8px;border:1px solid #cad8e6;border-radius:16px;padding:8px}
 textarea{min-width:0;flex:1;min-height:42px;max-height:130px;resize:none;border:0;outline:0;padding:9px 7px;line-height:1.5;color:#21354b}#go{border:0;border-radius:10px;background:#153e66;color:#fff;padding:10px 17px;font-weight:700}
@@ -43,17 +43,17 @@ textarea{min-width:0;flex:1;min-height:42px;max-height:130px;resize:none;border:
 <div class="side-label">แชตในเบราว์เซอร์นี้</div>
 <div id="sessions" class="sessions"></div><div class="side-note">บทสนทนาเก็บเฉพาะเบราว์เซอร์นี้ ไม่ซิงก์ข้ามเครื่อง</div></aside>
 <main class="main"><header class="top"><div class="top-row"><h1 id="chatTitle">ถามเรื่องทุนวิจัย</h1>
-<label class="persona">โปรไฟล์สมมติ (ใช้ทดสอบกฎเท่านั้น) <select id="persona" aria-label="โปรไฟล์สมมติสำหรับทดสอบกฎ"></select></label></div>
+</div>
 <p class="status" id="status">กำลังตรวจความพร้อมของข้อมูล...</p>
 <p class="status">คำตอบอ้างอิงข้อมูลที่ตรวจแล้วเท่านั้น ถ้าเอกสารยังไม่ยืนยัน ระบบจะบอกตรง ๆ</p>
 <p class="status">วงเงินจัดสรรรายปีจากเอกสารสแกนยังรอเจ้าหน้าที่ตรวจ ระบบจะแจ้งตรง ๆ เมื่อยังตอบตัวเลขไม่ได้</p>
 <p class="status">สำหรับเดโม: หลักเกณฑ์กลางที่มีอยู่ยังไม่ระบุเลขที่และวันประกาศ ต้องตรวจฉบับลงนามก่อนใช้เป็นประกาศทางการ</p>
 <details class="architecture"><summary>ระบบทำงานอย่างไร</summary><div class="flow">
 <div><strong>1 วิเคราะห์คำถาม</strong>จับชื่อทุน เลขข้อ ปีงบ และเรื่องที่ต้องการทราบ</div>
-<div><strong>2 Hybrid retrieval</strong>ค้นคำตรง ความหมาย ลำดับชั้น และข้อมูลที่ตรวจแล้ว</div>
-<div><strong>3 ประกอบคำตอบ</strong>เดโมใช้ข้อมูลที่ตรวจแล้วประกอบคำตอบด้วยโปรแกรม</div>
+<div><strong>2 Hybrid retrieval</strong>ค้น BM25 และ BGE-M3 ร่วมกับข้อมูลทุนที่ตรวจแล้ว</div>
+<div><strong>3 ประกอบคำตอบ</strong>LLM เรียบเรียงจากข้อมูลที่เลือกแล้ว มี Template สำรอง</div>
 <div><strong>4 ตรวจคำตอบและอ้างอิง</strong>ไม่ผ่านการตรวจจะไม่ส่งคำตอบออกไป</div>
-</div><p class="status" style="padding:0 11px 9px;margin:0">ปัจจุบันใช้ JSON และเวกเตอร์ในหน่วยความจำ ส่วน PostgreSQL/pgvector ในเล่มเป็นแผนระยะถัดไป ยังไม่เชื่อมฐานข้อมูลบุคลากร โปรไฟล์ด้านบนเป็นข้อมูลสมมติสำหรับทดสอบกฎ ไม่ใช่ระบบจับคู่หรือแนะนำทุน</p></details></header>
+</div><p class="status" style="padding:0 11px 9px;margin:0">ใช้ PostgreSQL และ ChromaDB พร้อม Ollama ยังไม่เชื่อมฐานข้อมูลบุคลากร และไม่ตัดสินสิทธิ์รายบุคคล</p></details></header>
 <section class="thread" id="thread" aria-label="บทสนทนา"><div class="thread-inner" id="out"></div></section>
 <form class="composer" id="askForm"><div class="composer-inner"><div class="input-row">
 <textarea id="q" maxlength="400" rows="1" placeholder="ถามเรื่องทุนวิจัย หรือถามต่อจากคำตอบก่อนหน้า..." aria-label="พิมพ์คำถาม"></textarea>
@@ -70,7 +70,6 @@ try {
 
 const out = document.getElementById('out');
 const thread = document.getElementById('thread');
-const persona = document.getElementById('persona');
 let chats = [], activeId = null;
 const pending = new Set();
 function saveChats() {
@@ -81,7 +80,7 @@ function loadChats() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     if (Array.isArray(saved)) chats = saved.filter(c => c && typeof c.id === 'string' && typeof c.title === 'string' &&
-      typeof c.personaId === 'string' && Array.isArray(c.turns)).slice(0, 20)
+      Array.isArray(c.turns)).slice(0, 20)
       .map(c => ({...c, context: c.context && typeof c.context.fund === 'string' ? c.context : null,
         turns: c.turns.filter(t => t && typeof t.question === 'string').slice(-40)
         .map(t => t.done ? t : {...t, done: true, error: true,
@@ -92,8 +91,7 @@ function loadChats() {
 function currentChat() { return chats.find(c => c.id === activeId); }
 function makeId() { return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random(); }
 function newChat() {
-  const chat = {id: makeId(), title: 'แชตใหม่', personaId: persona.value || 'P1',
-    context: null, turns: [], updatedAt: Date.now()};
+  const chat = {id: makeId(), title: 'แชตใหม่', context: null, turns: [], updatedAt: Date.now()};
   chats.unshift(chat); chats = chats.slice(0, 20); activeId = chat.id;
   saveChats(); render(); document.getElementById('q').focus();
 }
@@ -118,20 +116,59 @@ function renderSidebar() {
 }
 function resolveTurnBadge(turn) {
   if (!turn.done) return null;
-  if (turn.error) return {cls: 'err', text: '⚠️ ข้อผิดพลาดการเชื่อมต่อ'};
-  const src = String(turn.answerSource || '');
-  const model = turn.selectedModel || (src.includes(':') ? src.split(':').slice(1).join(':') : null);
-  const slotBy = turn.slotExtractedBy ? ` · สกัดคำถามด้วย ${turn.slotExtractedBy}` : '';
-  if (src.startsWith('llm') || (model && !src.startsWith('typed_claim'))) {
-    return {cls: 'llm', text: `🤖 โมเดลสร้างคำตอบ: ${model || 'qwen3:4b'} (LLM RAG + ผ่าน Verifier)${slotBy}`};
+  if (turn.error) return {cls: 'err', text: 'เชื่อมต่อไม่สำเร็จ'};
+  if (turn.answerSource === 'blocked') return {cls: 'err', text: 'คำตอบถูกบล็อกโดยการตรวจหลักฐาน'};
+  if (turn.answerSource === 'llm') return {cls: 'llm', text: `LLM (${turn.selectedModel || 'ไม่ระบุ'}) · ผ่านการตรวจหลักฐาน`};
+  return {cls: 'tpl', text: 'คำตอบจากข้อมูลที่ตรวจแล้ว · Template'};
+}
+// Render a small Markdown subset using text nodes; HTML, links and images stay inert.
+function renderAnswer(target, text) {
+  function inline(parent, value) {
+    const tokens = value.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g);
+    for (const token of tokens) {
+      const marker = token.startsWith('**') && token.endsWith('**') ? '**' :
+        token.startsWith('`') && token.endsWith('`') ? '`' :
+        token.startsWith('*') && token.endsWith('*') ? '*' : null;
+      if (!marker || token.length <= marker.length * 2) {
+        parent.appendChild(document.createTextNode(token)); continue;
+      }
+      const element = document.createElement(marker === '**' ? 'strong' : marker === '*' ? 'em' : 'code');
+      element.textContent = token.slice(marker.length, -marker.length);
+      parent.appendChild(element);
+    }
   }
-  if (src.startsWith('typed_claim')) {
-    return {cls: 'claim', text: `🧩 โมเดลสกัดข้อเท็จจริง: ${model || 'qwen3:4b'} (Typed Claim + ผ่าน Verifier)${slotBy}`};
+  let list = null, paragraph = null, code = null;
+  for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
+    if (line.trimStart().startsWith('```')) {
+      list = paragraph = null;
+      if (code) { code = null; continue; }
+      const pre = document.createElement('pre'); code = document.createElement('code');
+      pre.appendChild(code); target.appendChild(pre); continue;
+    }
+    if (code) { code.appendChild(document.createTextNode(line + '\n')); continue; }
+    if (!line.trim()) { list = paragraph = null; continue; }
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
+    const item = line.match(/^\s*(?:[-*+] |\d+[.)] )(.+)$/);
+    if (heading) {
+      list = paragraph = null;
+      const element = document.createElement('h' + heading[1].length);
+      inline(element, heading[2]); target.appendChild(element);
+    } else if (item) {
+      paragraph = null;
+      const kind = /^\s*\d/.test(line) ? 'ol' : 'ul';
+      if (!list || list.localName !== kind) {
+        list = document.createElement(kind);
+        if (kind === 'ol') list.start = Number(line.trimStart().match(/^\d+/)[0]);
+        target.appendChild(list);
+      }
+      const element = document.createElement('li'); inline(element, item[1]); list.appendChild(element);
+    } else {
+      list = null;
+      if (!paragraph) { paragraph = document.createElement('p'); target.appendChild(paragraph); }
+      else paragraph.appendChild(document.createElement('br'));
+      inline(paragraph, line);
+    }
   }
-  if (src === 'blocked') {
-    return {cls: 'err', text: '🛡️ ระบบบล็อกคำตอบ (ไม่ผ่านเกณฑ์ตรวจสอบหลักฐาน)'};
-  }
-  return {cls: 'tpl', text: `📋 ระบบประกอบคำตอบตรงจากหลักฐาน (Verified Template · ไม่ผ่าน LLM เขียนประโยค)${slotBy}`};
 }
 function renderTurn(turn) {
   const wrap = document.createElement('div'); wrap.className = 'turn';
@@ -144,25 +181,29 @@ function renderTurn(turn) {
     badge.textContent = badgeInfo.text;
     assistant.appendChild(badge);
   }
-  const ans = document.createElement('div'); ans.className = 'ans'; ans.textContent = turn.answer || 'กำลังค้นหาหลักฐาน...';
+  const ans = document.createElement('div'); ans.className = 'ans'; renderAnswer(ans, turn.answer || 'กำลังค้นหาหลักฐาน...');
   const cite = document.createElement('div'); cite.className = 'cite';
-  if (turn.citations && turn.citations.length > 8) {
-    const details = document.createElement('details');
-    const summary = document.createElement('summary'); summary.textContent = 'อ้างอิง ' + turn.citations.length + ' จุด';
-    const sources = document.createElement('div'); sources.textContent = turn.citations.join(' | ');
-    details.append(summary, sources); cite.appendChild(details);
-  } else if (turn.citations) cite.textContent = 'อ้างอิง: ' + (turn.citations.join(' | ') || 'ไม่มี');
+  if (turn.citations) {
+    cite.appendChild(document.createTextNode('อ้างอิง: '));
+    if (!turn.citations.length) cite.appendChild(document.createTextNode('ไม่มี'));
+    for (const [index, ref] of turn.citations.entries()) {
+      if (index) cite.appendChild(document.createTextNode(' | '));
+      if (typeof ref === 'string') { cite.appendChild(document.createTextNode(ref)); continue; }
+      const link = document.createElement('a');
+      link.textContent = `${ref.label} หน้า ${ref.page}${ref.clause ? ' ข้อ ' + ref.clause : ''}`;
+      if (ref.url?.startsWith('/api/sources/')) link.href = ref.url + '#page=' + ref.page;
+      link.target = '_blank'; link.rel = 'noopener'; cite.appendChild(link);
+    }
+  }
   const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = turn.meta || '';
   const fb = document.createElement('div'); fb.className = 'fb';
-  if (turn.done && !turn.error) showFeedback(fb, turn.question, turn.answer);
+  if (turn.done && !turn.error && turn.requestId) showFeedback(fb, turn.requestId);
   assistant.append(ans, cite, meta, fb); wrap.append(user, assistant); out.appendChild(wrap);
 }
 function render() {
   renderSidebar(); out.replaceChildren();
   const chat = currentChat();
   document.getElementById('chatTitle').textContent = chat && chat.title !== 'แชตใหม่' ? chat.title : 'ถามเรื่องทุนวิจัย';
-  if (chat && persona.options.length) persona.value = chat.personaId;
-  persona.disabled = !!(chat && chat.turns.length);
   document.getElementById('go').disabled = !!(chat && pending.has(chat.id));
   if (!chat || !chat.turns.length) {
     const empty = document.createElement('div'); empty.className = 'empty';
@@ -178,13 +219,12 @@ function render() {
 }
 async function refreshStatus() {
   try {
-    const h = await (await fetch('/healthz')).json();
-    const warm = typeof h.warmup.llm === 'object' ? `พร้อม (โหลด ${h.warmup.llm.chat}s)` : h.warmup.llm;
-    const pendingFacts = h.facts_awaiting_review ? ` | ตัวเลขรอตรวจ ${h.facts_awaiting_review} แถว` : '';
-    const modeLabel = h.answer_mode === 'llm' ? `LLM RAG (${h.main_model || 'qwen3:4b'})` : h.answer_mode === 'typed_claim' ? `Typed Claim (${h.main_model || 'qwen3:4b'})` : 'ข้อมูลที่ตรวจแล้ว';
+    const res = await fetch('/api/status');
+    if (!res.ok) throw new Error('status');
+    const h = await res.json();
     document.getElementById('status').textContent =
-      `คำตอบ: ${modeLabel} | สถานะ: ${warm} | ค้นความหมาย: ${h.semantic_backend}${pendingFacts}`;
-  } catch (_error) { document.getElementById('status').textContent = 'เซิร์ฟเวอร์เดโมไม่พร้อม กรุณาตรวจการเชื่อมต่อ'; }
+      `ฐานข้อมูล: ${h.database} | โมเดล: ${h.answer_model} (${h.models}) | ดัชนีเวกเตอร์: ${h.vector_index} | LLM ตอบ: ${h.answer_enabled ? 'เปิด' : 'ปิด'}`;
+  } catch (_error) { document.getElementById('status').textContent = 'บริการไม่พร้อม กรุณาตรวจฐานข้อมูลและการตั้งค่าเซิร์ฟเวอร์'; }
 }
 async function ask() {
   const input = document.getElementById('q'); const q = input.value.trim().slice(0, 400);
@@ -192,7 +232,7 @@ async function ask() {
   if (!currentChat()) newChat();
   const chat = currentChat(); if (pending.has(chat.id)) return;
   const history = chat.turns.filter(t => t.done && !t.error).map(t => t.question).slice(-8);
-  const personaId = chat.personaId; input.value = '';
+  input.value = '';
   const turn = {question: q, answer: '', citations: null, meta: '', done: false, error: false};
   chat.turns.push(turn); if (chat.title === 'แชตใหม่') chat.title = q.slice(0, 38);
   chat.updatedAt = Date.now(); chats.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -200,26 +240,19 @@ async function ask() {
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 40000);
   try {
     const res = await fetch('/api/query', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({question: q, persona_id: personaId, history, context: chat.context}), signal: controller.signal});
+      body: JSON.stringify({question: q, history, context: chat.context}), signal: controller.signal});
     if (!res.ok) { const err = await res.json().catch(() => ({detail: 'เรียกเซิร์ฟเวอร์ไม่สำเร็จ'}));
       turn.answer = err.detail || 'เรียกเซิร์ฟเวอร์ไม่สำเร็จ'; turn.error = true; return; }
     const e = await res.json();
     turn.answer = e.answer; turn.citations = e.citations; turn.done = true;
-    turn.answerSource = e.answer_source; turn.selectedModel = e.selected_model;
-    turn.slotExtractedBy = e.slots?.extracted_by || null;
-    const rememberedIntents = ['amount', 'ceiling', 'tiers', 'details', 'definition', 'eligibility', 'application'];
-    if (e.verify?.ok && e.answer_source !== 'blocked' && e.slots?.fund &&
-        rememberedIntents.includes(e.slots.intent) && !e.slots.clause_conflict && !e.slots.alternatives?.length) {
-      chat.context = {fund: e.slots.fund, tier: e.slots.tier, fiscal_year: e.slots.fiscal_year,
-        year_assumed: e.slots.year_assumed, intent: e.slots.intent};
-    } else if (e.slots?.intent !== 'smalltalk') chat.context = null;
-    const t = e.timings_ms;
-    const srcLabel = e.answer_source?.startsWith('llm:') ? `LLM (${e.selected_model || e.answer_source}) + Verifier` : e.answer_source?.startsWith('typed_claim') ? `Typed Claim (${e.selected_model || e.answer_source}) + Verifier` : 'ข้อมูลที่ตรวจแล้ว';
-    const llmMs = t.llm !== undefined ? `, โมเดล ${t.llm} ms` : '';
-    turn.meta = `ทุน: ${e.slots.fund || 'ไม่ระบุ'} | ปีงบ: ${e.slots.fiscal_year} | ผลกฎของโปรไฟล์สมมติ: ${e.ruling.verdict}`
-      + ` | คำตอบจาก: ${srcLabel} | ค้นความหมาย: ${e.evidence.semantic_by}\n`
-      + `เวลา: วิเคราะห์ ${t.analyze} ms, ค้นคืน ${t.retrieve} ms, ตรวจสิทธิ์ ${t.rules} ms${llmMs}, `
-      + `ตรวจคำตอบ ${t.verify} ms, รวม ${t.total} ms`;
+    turn.answerSource = e.answer_source; turn.selectedModel = e.processing.answer_model;
+    turn.requestId = e.request_id;
+    chat.context = e.context;
+    const t = e.timings_ms, info = e.processing;
+    turn.meta = `วิเคราะห์: ${info.analysis_method} | LLM ตีความ: ${info.slot_attempted ? info.slot_model : 'ไม่เรียก'}${info.slot_fallback_reason ? ' (' + info.slot_fallback_reason + ')' : ''}`
+      + `\nค้นคืน: ${info.retrieval_method}${info.retrieval_fallback_reason ? ' (' + info.retrieval_fallback_reason + ')' : ''}`
+      + ` | LLM เรียบเรียง: ${info.answer_attempted ? info.answer_model : 'ไม่เรียก'}${info.answer_fallback_reason ? ' (' + info.answer_fallback_reason + ')' : ''}`
+      + `\nเวลา: วิเคราะห์ ${t.analyze} ms, ค้นคืน ${t.retrieve} ms, รวม ${t.total} ms`;
   } catch (error) {
     turn.answer = error.name === 'AbortError' ? 'ระบบยังไม่ตอบใน 40 วินาที กรุณาลองถามอีกครั้ง'
       : 'เชื่อมต่อเซิร์ฟเวอร์เดโมไม่ได้ กรุณารีเฟรชหน้าเว็บหรือตรวจว่าเซิร์ฟเวอร์ยังเปิดอยู่';
@@ -230,17 +263,16 @@ async function ask() {
     if (activeId === chat.id) render();
   }
 }
-function showFeedback(box, question, answer) {
+function showFeedback(box, requestId) {
   box.innerHTML = '<button type="button">คำตอบนี้ถูกต้อง</button><button type="button">ยังไม่ถูก</button>';
   const [yes, no] = box.querySelectorAll('button');
   const send = async helpful => {
     const note = helpful ? '' : (prompt('ที่ถูกควรเป็นอย่างไร ช่วยพิมพ์สั้น ๆ') || '').slice(0, 400);
     try {
-      const response = await fetch('/v1/feedback', {method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({question, answer, helpful, note})});
+      const response = await fetch('/api/feedback', {method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({request_id: requestId, helpful, note})});
       const data = response.ok ? await response.json() : {};
-      box.textContent = response.ok && data.recorded ? 'บันทึกแล้ว ขอบคุณครับ' :
-        response.ok ? 'โหมดสาธิตนี้ไม่ได้เก็บความเห็น' : 'ยังบันทึกความเห็นไม่ได้ กรุณาลองใหม่ภายหลัง';
+      box.textContent = response.ok ? 'บันทึกแล้ว ขอบคุณครับ' : 'ยังบันทึกความเห็นไม่ได้ กรุณาลองใหม่ภายหลัง';
     } catch (_error) { box.textContent = 'ยังบันทึกความเห็นไม่ได้ กรุณาลองใหม่ภายหลัง'; }
   };
   yes.onclick = () => send(true); no.onclick = () => send(false);
@@ -250,11 +282,5 @@ document.getElementById('askForm').onsubmit = e => { e.preventDefault(); ask(); 
 document.getElementById('q').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask(); }
 });
-persona.onchange = () => { const chat = currentChat(); if (chat && !chat.turns.length) { chat.personaId = persona.value; saveChats(); } };
 loadChats(); render(); refreshStatus(); setInterval(refreshStatus, 5000);
-fetch('/v1/personas').then(r => r.json()).then(list => {
-  persona.replaceChildren(); for (const p of list) { const option = document.createElement('option');
-    option.value = p.id; option.textContent = `${p.id} ${p.name}`; persona.appendChild(option); }
-  if (!currentChat()) newChat(); else render();
-}).catch(() => { persona.innerHTML = '<option value="P1">P1 (ทดสอบ)</option>'; if (!currentChat()) newChat(); else render(); });
 </script></body></html>

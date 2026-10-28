@@ -1,3 +1,5 @@
+> Updated 28 October 2026: the approved implementation uses one `/api/*` contract and QueryService, PostgreSQL + ChromaDB, and verified LLM rephrasing/template fallback. Legacy HTTP contracts below are historical decisions, not mounted routes.
+
 # ADR 001: Modular monolith with ports and adapters
 
 Accepted for the RISE API MVP, 20 October 2026.

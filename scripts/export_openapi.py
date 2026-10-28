@@ -1,4 +1,4 @@
-"""Generate the read-only v2 contract from the actual application schemas."""
+"""Generate the read-only API contract from the actual application schemas."""
 import json
 import sys
 from pathlib import Path
@@ -8,9 +8,9 @@ from app.main import app
 
 def design_schema():
     full = app.openapi()
-    return {**full, "info": {**full["info"], "title": "RISE v2 API contract",
-                              "description": "Read-only contract generated from the implemented /v2 routes."},
-            "paths": {p: v for p, v in full["paths"].items() if p.startswith("/v2/")}}
+    return {**full, "info": {**full["info"], "title": "RISE API contract",
+                              "description": "Read-only contract generated from the implemented /api routes."},
+            "paths": {p: v for p, v in full["paths"].items() if p.startswith("/api/")}}
 
 
 if __name__ == "__main__":

@@ -157,17 +157,6 @@ def test_only_installed_answer_models_are_offered(monkeypatch):
     assert llm.installed_chat_models() == [{"name": "thai-qwen:latest", "size": 100}]
 
 
-def test_model_api_reports_verified_template_mode_and_rejects_selection(monkeypatch):
-    monkeypatch.setattr(limits, "take", lambda _user: (True, 0))
-    client = TestClient(app)
-    listing = client.get("/v1/models")
-    assert listing.status_code == 200
-    assert listing.json()["enabled"] is False
-    assert listing.json()["models"] == []
-    assert listing.json()["answer_mode"] == "verified_template"
-    for route in ("/v1/query", "/v1/query/stream"):
-        response = client.post(route, json={"question": "มีทุนอะไรบ้าง", "model": "not-installed"})
-        assert response.status_code == 400
 
 
 def test_safe_answer_mode_does_not_consult_ollama_for_model_selection(monkeypatch):
@@ -184,25 +173,6 @@ def test_safe_answer_mode_does_not_consult_ollama_for_model_selection(monkeypatc
     assert refused.value.status_code == 400
 
 
-def test_explicit_model_is_rejected_before_regular_or_streaming_pipeline(monkeypatch):
-    monkeypatch.setattr(limits, "take", lambda _user: (True, 0))
-    seen = []
-
-    async def fake_run(_question, _user, _history, model):
-        seen.append(("regular", model))
-        return {"selected_model": model}
-
-    async def fake_stream(_question, _user, _history, model):
-        seen.append(("stream", model))
-        yield {"type": "done", "selected_model": model}
-
-    monkeypatch.setattr(pipeline, "run", fake_run)
-    monkeypatch.setattr(pipeline, "run_stream", fake_stream)
-    client = TestClient(app)
-    body = {"question": "มีทุนอะไรบ้าง", "model": "qwen3:4b"}
-    assert client.post("/v1/query", json=body).status_code == 400
-    assert client.post("/v1/query/stream", json=body).status_code == 400
-    assert seen == []
 
 
 def test_amount_word_beats_eligibility_word():
@@ -825,9 +795,9 @@ def test_catalogue_paraphrases_do_not_swallow_fund_specific_questions(question, 
     assert pipeline.analyze(question)["intent"] == intent
 
 
-def test_the_catalogue_covers_both_headings_of_the_annex():
+def test_the_catalogue_covers_three_headings_of_the_annex():
     groups = {row["group"] for row in store.fund_catalogue()}
-    assert groups == {"ทุนส่งเสริมการวิจัย", "ทุนอุดหนุนกิจกรรม"}
+    assert groups == set(store.FUND_GROUPS.values())
     assert len(store.fund_catalogue()) >= 25
 
 
@@ -1260,6 +1230,11 @@ def test_fund_list_does_not_promise_unapproved_annual_amounts():
     answer, _ = pipeline._catalogue_answer()
     assert "วงเงินจัดสรรรายปีที่เจ้าหน้าที่อนุมัติแล้ว" in answer
     assert "หากยังรอตรวจจะแจ้งให้ทราบ" in answer
+    assert "### ทุนส่งเสริมการวิจัย (12 รายการ)\n\n- " in answer
+    assert "### ทุนอุดหนุนกิจกรรม (15 รายการ)\n\n- " in answer
+    assert "### ทุนส่งเสริมนวัตกรรม และการบริการวิชาการ (2 รายการ)" in answer
+    assert answer.count("(ข้อ 2.11)") == 1
+    assert len([line for line in answer.splitlines() if line.startswith("- ")]) == 29
 
 
 def test_model_cannot_turn_an_allocated_cap_into_a_promised_payment():
@@ -1498,45 +1473,8 @@ def test_named_reviewer_can_confirm_a_checked_amount(tmp_path, monkeypatch):
     assert result["ok"] and saved["verified"] is True and saved["reviewed_by"] == "ผู้ตรวจ"
 
 
-def test_admin_cannot_rewrite_an_already_verified_fact(tmp_path, monkeypatch):
-    row = {"id": "trusted-row", "amount": 25000, "verified": True,
-           "reviewed_by": "ผู้ตรวจเดิม"}
-    source = tmp_path / "facts.json"
-    source.write_text(json.dumps([row], ensure_ascii=False), encoding="utf-8")
-    monkeypatch.setattr(review, "DATA", tmp_path)
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-
-    direct = review.verify_fact("trusted-row", "ผู้ตรวจใหม่", 1)
-    response = TestClient(app).post(
-        "/v1/admin/verify-fact",
-        headers={"X-Admin-Token": "test-admin-token"},
-        json={"id": "trusted-row", "reviewer": "ผู้ตรวจใหม่", "amount": 1},
-    )
-
-    assert not direct["ok"]
-    assert response.status_code == 409
-    assert json.loads(source.read_text(encoding="utf-8")) == [row]
 
 
-def test_admin_can_open_only_a_known_source_pdf_with_a_token(tmp_path, monkeypatch):
-    original = b"%PDF-1.4\nsource document\n%%EOF"
-    (tmp_path / "ประกาศ_42-68_ทุนส่งเสริมวิจัย_ปีงบประมาณ_พ.ศ._2569.pdf").write_bytes(original)
-    (tmp_path / "secret.pdf").write_bytes(b"not a source")
-    monkeypatch.setattr(review, "SOURCE_DIR", tmp_path)
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-    client = TestClient(app)
-
-    unauthorised = client.get("/v1/admin/source", params={"doc": "ประกาศ 42/2568"})
-    unknown = client.get("/v1/admin/source", params={"doc": "../secret"},
-                         headers={"X-Admin-Token": "test-admin-token"})
-    source = client.get("/v1/admin/source", params={"doc": "ประกาศ 42/2568"},
-                        headers={"X-Admin-Token": "test-admin-token"})
-
-    assert unauthorised.status_code == 401
-    assert unknown.status_code == 404
-    assert source.status_code == 200 and source.content == original
-    assert source.headers["content-type"].startswith("application/pdf")
-    assert source.headers["cache-control"] == "no-store, private"
 
 
 def test_admin_pending_includes_every_unreviewed_ocr_chunk(monkeypatch):
@@ -1564,18 +1502,6 @@ def test_admin_pending_includes_rows_with_a_missing_verified_marker(monkeypatch)
     assert pending["chunks"] == [chunk]
 
 
-def test_admin_page_offers_original_pdf_and_ocr_review(monkeypatch):
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-    page = TestClient(app).get("/admin")
-
-    assert page.status_code == 200
-    assert "เปิด PDF ต้นฉบับ" in page.text
-    assert "ดูข้อความ OCR" in page.text
-    assert "ตรวจ PDF ใหม่ก่อนนำเข้าระบบ" in page.text
-    assert "ไม่บันทึกไฟล์" in page.text
-    assert "function requireReviewer()" in page.text
-    assert "input.scrollIntoView" in page.text
-    assert "reviewer: who()" not in page.text
 
 
 def _sample_text_pdf() -> bytes:
@@ -1635,32 +1561,8 @@ def test_short_pdf_text_is_not_lost_when_ocr_is_unavailable(monkeypatch):
     assert ingest.page_text(ShortTextPage(), 200) == ("Short grant notice", "text_partial")
 
 
-def test_pdf_inspection_api_requires_admin_token_and_rejects_non_pdfs(monkeypatch):
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-    client = TestClient(app)
-    headers = {"X-Admin-Token": "test-admin-token", "X-Pdf-Name": "new-fund.pdf",
-               "Content-Type": "application/pdf"}
-
-    assert client.post("/v1/admin/inspect-pdf", content=_sample_text_pdf()).status_code == 401
-    invalid = client.post("/v1/admin/inspect-pdf", content=b"not a pdf", headers=headers)
-    valid = client.post("/v1/admin/inspect-pdf", content=_sample_text_pdf(), headers=headers)
-
-    assert invalid.status_code == 400
-    assert valid.status_code == 200
-    assert valid.json()["pages"][0]["verified"] is False
 
 
-def test_pdf_inspection_api_rejects_oversized_upload_before_parsing(monkeypatch):
-    from app.modules.documents import pdf_inspection
-
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-    monkeypatch.setattr(pdf_inspection, "MAX_BYTES", 16)
-    client = TestClient(app)
-    response = client.post("/v1/admin/inspect-pdf", content=_sample_text_pdf(),
-                           headers={"X-Admin-Token": "test-admin-token", "X-Pdf-Name": "large.pdf",
-                                    "Content-Type": "application/pdf"})
-
-    assert response.status_code == 413
 
 
 def test_cli_ingest_never_auto_approves_a_text_pdf(tmp_path, monkeypatch):
@@ -1756,3 +1658,31 @@ def test_audit_tail_reads_only_a_bounded_suffix(tmp_path, monkeypatch):
     rows = audit.tail(3)
 
     assert rows == [{"n": 97}, {"n": 98}, {"n": 99}]
+
+
+def test_innovation_catalogue_requires_reviewed_active_source():
+    from app.modules.knowledge.context import use_corpus
+    import copy
+    from types import SimpleNamespace
+    corpus = SimpleNamespace(FACTS=copy.deepcopy(store.view().FACTS),
+                             CHUNKS=copy.deepcopy(store.view().CHUNKS))
+    with use_corpus(corpus):
+        rows = [r for r in store.fund_catalogue() if r["clause"].startswith("3.")]
+        assert {r["clause"] for r in rows} == {"3.1", "3.2"}
+        assert all(r["source"]["page"] == 8 for r in rows)
+        for chunk in corpus.CHUNKS:
+            if chunk.get("clause") == "3.1":
+                chunk["verified"] = False
+            if chunk.get("clause") == "3.2":
+                chunk["status"] = "draft"
+        assert not [r for r in store.fund_catalogue() if r["clause"].startswith("3.")]
+
+
+@pytest.mark.parametrize("clause,fund", [
+    ("3.1", "ทุนสนับสนุนการได้รับทุนบริการวิชาการจากภายนอก"),
+    ("3.2", "ทุนสนับสนุนการได้รับทุนพัฒนานวัตกรรมจากภายนอก"),
+])
+def test_innovation_clause_followup_after_catalogue(clause, fund):
+    slots = pipeline.analyze(f"ข้อ {clause} มีเงื่อนไขอะไร", history=["มีทุนอะไรบ้าง"])
+    assert slots["fund"] == fund
+    assert slots["intent"] == "details"

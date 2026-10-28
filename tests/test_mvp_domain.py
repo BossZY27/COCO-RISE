@@ -33,10 +33,10 @@ def test_candidate_gate_rejects_changed_year_amount_fund_and_qualification():
 
 
 def test_ollama_discards_partial_and_truncated_generation():
-    client = OllamaClient(Settings(_env_file=None))
+    client = OllamaClient(Settings(_env_file=None, answer_model="qwen3:4b"))
     def respond(request):
         if request.url.path == "/api/tags":
-            return httpx.Response(200, json={"models":[{"name":"qwen3:1.7b","digest":"revision-1"}]})
+            return httpx.Response(200, json={"models":[{"name":"qwen3:4b","digest":"revision-1"}]})
         return httpx.Response(200, json={"done": True, "done_reason":"length", "message":{"content":"unsafe partial"}})
     client.http.close()
     client.http = httpx.Client(base_url="http://model", transport=httpx.MockTransport(respond))

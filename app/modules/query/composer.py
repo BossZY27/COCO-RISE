@@ -14,24 +14,28 @@ def _defined_term(question: str) -> dict | None:
 
 
 def _catalogue_answer() -> tuple[str, list[str]]:
-    """List the funds by their two headings. No amounts here: the list is for choosing, and a wall of
+    """List the funds by their three headings. No amounts here: the list is for choosing, and a wall of
     numbers would bury that. The reader picks one and asks again."""
     catalogue = store.fund_catalogue()
     lines = []
-    for group in ("ทุนส่งเสริมการวิจัย", "ทุนอุดหนุนกิจกรรม"):
-        names = [f"{c['fund']} (ข้อ {c['clause']})" for c in catalogue if c["group"] == group]
+    for group in store.FUND_GROUPS.values():
+        by_clause = {}
+        for item in catalogue:
+            if item["group"] == group:
+                by_clause.setdefault(item["clause"], []).append(item["fund"])
+        names = [f"{' / '.join(funds)} (ข้อ {clause})" for clause, funds in by_clause.items()]
         if names:
-            lines.append(f"{group} มี {len(names)} รายการ คือ " + ", ".join(names))
+            lines.append(f"### {group} ({len(names)} รายการ)\n\n" + "\n".join(f"- {name}" for name in names))
     lines.append("ถามชื่อทุนที่สนใจต่อได้เลย ระบบจะตอบเพดานตามหลักเกณฑ์กลางหรือวงเงินจัดสรรรายปีที่เจ้าหน้าที่อนุมัติแล้ว หากยังรอตรวจจะแจ้งให้ทราบ")
     pages = sorted({row["source"]["page"] for row in catalogue if row.get("source", {}).get("page")})
     citations = [f"หลักเกณฑ์กลาง บัญชีแนบท้าย หน้า {page}" for page in pages]
-    return " ".join(lines), citations
+    return "\n\n".join(lines), citations
 
 
 def _catalogue_group_summary() -> tuple[str, list[str]]:
     """A short orientation; the separate catalogue intent retains the complete list."""
     catalogue = store.fund_catalogue()
-    groups = [group for group in ("ทุนส่งเสริมการวิจัย", "ทุนอุดหนุนกิจกรรม")
+    groups = [group for group in store.FUND_GROUPS.values()
               if any(row["group"] == group for row in catalogue)]
     pages = sorted({row["source"]["page"] for row in catalogue if row.get("source", {}).get("page")})
     return " และ ".join(groups), [f"หลักเกณฑ์กลาง บัญชีแนบท้าย หน้า {page}" for page in pages]
@@ -141,10 +145,10 @@ def compose_answer(slots: dict, evidence: dict, ruling: dict,
         catalogue = next((row for row in store.fund_catalogue() if row["fund"] == slots["fund"]), None)
         ceiling = next((row for row in store.fact_lookup(slots["fund"], None, None, "ceiling")
                         if store.is_verified(row)), None)
-        if catalogue and ceiling:
+        if catalogue:
             return (f"ตามบัญชีแนบท้ายของหลักเกณฑ์กลาง {slots['fund']}อยู่ในหมวด"
                     f"{catalogue['group']} ถ้าต้องการทราบเพดานหรือเงื่อนไขของทุนนี้ "
-                    "ถามต่อโดยระบุเรื่องที่สนใจได้"), [_cite(ceiling["source"])], []
+                    "ถามต่อโดยระบุเรื่องที่สนใจได้"), [_cite(catalogue["source"])], []
     if slots["fund"] and slots["intent"] == "match":
         ceiling = next((row for row in store.fact_lookup(slots["fund"], None, None, "ceiling")
                         if store.is_verified(row)), None)

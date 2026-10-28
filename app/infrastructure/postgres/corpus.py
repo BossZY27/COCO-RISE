@@ -90,4 +90,4 @@ class CorpusRepository:
         return {"document_id": str(v.document_id), "version_id": str(v.id), "page": e.page,
                 "chunk_id": str(e.chunk_id) if e.chunk_id else None, "quote": e.quote,
                 "label": documents[v.document_id].title, "clause": e.clause,
-                "url": f"/v2/sources/{v.id}/pages/{e.page}"}
+                "url": f"/api/sources/{v.id}/pages/{e.page}"}

@@ -220,8 +220,8 @@ class ChromaVectorRepository:
             if generation is None:
                 return []
 
-        client = get_chroma_client(self.chroma_dir)
         try:
+            client = get_chroma_client(self.chroma_dir)
             collection = client.get_collection(name=self._collection_name(generation))
             total = collection.count()
             if total == 0:
@@ -231,8 +231,8 @@ class ChromaVectorRepository:
                 n_results=min(24, total),
                 include=["distances"],
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            raise RuntimeError("Vector index unavailable") from exc
 
         hit_ids = (res.get("ids") or [[]])[0]
         distances = (res.get("distances") or [[]])[0]
@@ -315,9 +315,9 @@ class ChromaVectorRepository:
             s.flush()
             identifier = generation.id
 
-        chroma_client = get_chroma_client(self.chroma_dir)
         col_name = self._collection_name(identifier)
         try:
+            chroma_client = get_chroma_client(self.chroma_dir)
             collection = chroma_client.get_or_create_collection(
                 name=col_name,
                 metadata={"hnsw:space": "cosine", "generation_id": str(identifier)},

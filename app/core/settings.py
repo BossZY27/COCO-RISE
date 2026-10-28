@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="RISE_", env_file=".env", extra="ignore")
     database_url: str = ""
     llm_base: str = "http://127.0.0.1:11434"
-    answer_model: str = "qwen3:1.7b"
+    answer_model: str = "qwen3:4b-instruct-2507-q4_K_M"
     embed_model: str = "bge-m3"
     admin_token: str = ""
     files_dir: Path = Path("data/private")
@@ -25,3 +25,4 @@ class Settings(BaseSettings):
     ingestion_max_documents: int = Field(100, ge=1)
     ingestion_max_total_bytes: int = Field(512 * 1024 * 1024, ge=1)
     answer_enabled: bool = True
+    slot_llm_fallback: bool = True

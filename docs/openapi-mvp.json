@@ -1,28 +1,39 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
-    "title": "RISE v2 API contract",
-    "description": "Read-only contract generated from the implemented /v2 routes.",
-    "version": "2.0.0"
+    "title": "RISE API contract",
+    "description": "Read-only contract generated from the implemented /api routes.",
+    "version": "3.0.0"
   },
   "paths": {
-    "/v2/documents": {
+    "/api/documents": {
       "post": {
         "tags": [
-          "Documents v2"
+          "Documents"
         ],
         "summary": "Upload",
-        "operationId": "upload_v2_documents_post",
+        "operationId": "upload_api_documents_post",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "title",
             "in": "query",
             "required": false,
             "schema": {
-              "title": "Title",
-              "type": "string",
-              "maxLength": 250,
-              "nullable": true
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 250
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Title"
             }
           },
           {
@@ -30,11 +41,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "title": "Fiscal Year Be",
-              "type": "integer",
-              "maximum": 3000,
-              "minimum": 2400,
-              "nullable": true
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 3000,
+                  "minimum": 2400
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fiscal Year Be"
             }
           },
           {
@@ -46,16 +63,6 @@
               "maxLength": 500,
               "default": "document.pdf",
               "title": "X-Pdf-Name"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -79,18 +86,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
         },
         "requestBody": {
@@ -103,20 +98,19 @@
               }
             }
           }
-        },
-        "description": "RISE API.",
+        }
+      },
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Documents",
+        "operationId": "documents_api_documents_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      },
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Documents",
-        "operationId": "documents_v2_documents_get",
         "parameters": [
           {
             "name": "limit",
@@ -140,16 +134,6 @@
               "default": 0,
               "title": "Offset"
             }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
           }
         ],
         "responses": {
@@ -162,7 +146,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DocumentResponse"
                   },
-                  "title": "Response Documents V2 Documents Get"
+                  "title": "Response Documents Api Documents Get"
                 }
               }
             }
@@ -176,35 +160,69 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/documents/inspect-pdf": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Inspect Pdf",
+        "operationId": "inspect_pdf_api_documents_inspect_pdf_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "x-pdf-name",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 500,
+              "default": "document.pdf",
+              "title": "X-Pdf-Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
-    "/v2/documents/{document_id}": {
+    "/api/documents/{document_id}": {
       "get": {
         "tags": [
-          "Documents v2"
+          "Documents"
         ],
         "summary": "Document",
-        "operationId": "document_v2_documents__document_id__get",
+        "operationId": "document_api_documents__document_id__get",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "document_id",
@@ -214,16 +232,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Document Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -247,35 +255,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/documents/{document_id}/versions": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Versions",
+        "operationId": "versions_api_documents__document_id__versions_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/documents/{document_id}/versions": {
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Versions",
-        "operationId": "versions_v2_documents__document_id__versions_get",
         "parameters": [
           {
             "name": "document_id",
@@ -285,16 +280,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Document Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -308,7 +293,7 @@
                   "items": {
                     "$ref": "#/components/schemas/VersionResponse"
                   },
-                  "title": "Response Versions V2 Documents  Document Id  Versions Get"
+                  "title": "Response Versions Api Documents  Document Id  Versions Get"
                 }
               }
             }
@@ -322,33 +307,20 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      },
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload Version",
+        "operationId": "upload_version_api_documents__document_id__versions_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      },
-      "post": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Upload Version",
-        "operationId": "upload_version_v2_documents__document_id__versions_post",
         "parameters": [
           {
             "name": "document_id",
@@ -369,16 +341,6 @@
               "maxLength": 500,
               "default": "document.pdf",
               "title": "X-Pdf-Name"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -402,18 +364,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
         },
         "requestBody": {
@@ -426,22 +376,21 @@
               }
             }
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Version",
+        "operationId": "version_api_versions__version_id__get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}": {
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Version",
-        "operationId": "version_v2_versions__version_id__get",
         "parameters": [
           {
             "name": "version_id",
@@ -451,16 +400,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -484,35 +423,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}/pages": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Pages",
+        "operationId": "pages_api_versions__version_id__pages_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}/pages": {
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Pages",
-        "operationId": "pages_v2_versions__version_id__pages_get",
         "parameters": [
           {
             "name": "version_id",
@@ -522,16 +448,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -545,7 +461,7 @@
                   "items": {
                     "$ref": "#/components/schemas/PageResponse"
                   },
-                  "title": "Response Pages V2 Versions  Version Id  Pages Get"
+                  "title": "Response Pages Api Versions  Version Id  Pages Get"
                 }
               }
             }
@@ -559,35 +475,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}/chunks": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Chunks",
+        "operationId": "chunks_api_versions__version_id__chunks_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}/chunks": {
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Chunks",
-        "operationId": "chunks_v2_versions__version_id__chunks_get",
         "parameters": [
           {
             "name": "version_id",
@@ -597,16 +500,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -620,7 +513,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ChunkResponse"
                   },
-                  "title": "Response Chunks V2 Versions  Version Id  Chunks Get"
+                  "title": "Response Chunks Api Versions  Version Id  Chunks Get"
                 }
               }
             }
@@ -634,35 +527,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}/pages/{page}": {
+      "patch": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Edit",
+        "operationId": "edit_api_versions__version_id__pages__page__patch",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}/pages/{page}": {
-      "patch": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Edit",
-        "operationId": "edit_v2_versions__version_id__pages__page__patch",
         "parameters": [
           {
             "name": "version_id",
@@ -681,16 +561,6 @@
             "schema": {
               "type": "integer",
               "title": "Page"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -724,32 +594,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}/review": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_versions__version_id__review_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}/review": {
-      "post": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Review",
-        "operationId": "review_v2_versions__version_id__review_post",
         "parameters": [
           {
             "name": "version_id",
@@ -759,16 +619,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -802,32 +652,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       }
     },
-    "/v2/versions/{version_id}/publish": {
+    "/api/versions/{version_id}/publish": {
       "post": {
         "tags": [
-          "Documents v2"
+          "Documents"
         ],
         "summary": "Publish",
-        "operationId": "publish_v2_versions__version_id__publish_post",
+        "operationId": "publish_api_versions__version_id__publish_post",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "version_id",
@@ -837,16 +677,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -880,32 +710,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       }
     },
-    "/v2/versions/{version_id}/withdraw": {
+    "/api/versions/{version_id}/withdraw": {
       "post": {
         "tags": [
-          "Documents v2"
+          "Documents"
         ],
         "summary": "Withdraw",
-        "operationId": "withdraw_v2_versions__version_id__withdraw_post",
+        "operationId": "withdraw_api_versions__version_id__withdraw_post",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "version_id",
@@ -915,16 +735,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -958,32 +768,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/versions/{version_id}/source": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Private Source",
+        "operationId": "private_source_api_versions__version_id__source_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/versions/{version_id}/source": {
-      "get": {
-        "tags": [
-          "Documents v2"
         ],
-        "summary": "Private Source",
-        "operationId": "private_source_v2_versions__version_id__source_get",
         "parameters": [
           {
             "name": "version_id",
@@ -993,16 +793,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Version Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1019,35 +809,17 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       }
     },
-    "/v2/sources/{version_id}/pages/{page}": {
+    "/api/sources/{version_id}/pages/{page}": {
       "get": {
         "tags": [
-          "Documents v2"
+          "Documents"
         ],
         "summary": "Source",
-        "operationId": "source_v2_sources__version_id__pages__page__get",
+        "operationId": "source_api_sources__version_id__pages__page__get",
         "parameters": [
           {
             "name": "version_id",
@@ -1082,21 +854,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "description": "RISE API."
+        }
       }
     },
-    "/v2/jobs": {
+    "/api/jobs": {
       "get": {
         "tags": [
-          "Jobs v2"
+          "Jobs"
         ],
         "summary": "Jobs",
-        "operationId": "jobs_v2_jobs_get",
+        "operationId": "jobs_api_jobs_get",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "limit",
@@ -1120,16 +893,6 @@
               "default": 0,
               "title": "Offset"
             }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
           }
         ],
         "responses": {
@@ -1142,7 +905,7 @@
                   "items": {
                     "$ref": "#/components/schemas/JobResponse"
                   },
-                  "title": "Response Jobs V2 Jobs Get"
+                  "title": "Response Jobs Api Jobs Get"
                 }
               }
             }
@@ -1156,35 +919,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Job",
+        "operationId": "job_api_jobs__job_id__get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/jobs/{job_id}": {
-      "get": {
-        "tags": [
-          "Jobs v2"
         ],
-        "summary": "Job",
-        "operationId": "job_v2_jobs__job_id__get",
         "parameters": [
           {
             "name": "job_id",
@@ -1194,16 +944,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Job Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1227,35 +967,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/jobs/{job_id}/retry": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_api_jobs__job_id__retry_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/jobs/{job_id}/retry": {
-      "post": {
-        "tags": [
-          "Jobs v2"
         ],
-        "summary": "Retry",
-        "operationId": "retry_v2_jobs__job_id__retry_post",
         "parameters": [
           {
             "name": "job_id",
@@ -1265,16 +992,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Job Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1298,35 +1015,17 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       }
     },
-    "/v2/query": {
+    "/api/query": {
       "post": {
         "tags": [
-          "Query v2"
+          "Query"
         ],
         "summary": "Query",
-        "operationId": "query_v2_query_post",
+        "operationId": "query_api_query_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1357,21 +1056,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "description": "RISE API."
+        }
       }
     },
-    "/v2/facts": {
+    "/api/facts": {
       "get": {
         "tags": [
-          "Knowledge v2"
+          "Knowledge"
         ],
         "summary": "Fact Listing",
-        "operationId": "fact_listing_v2_facts_get",
+        "operationId": "fact_listing_api_facts_get",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
         "parameters": [
           {
             "name": "limit",
@@ -1395,16 +1095,6 @@
               "default": 0,
               "title": "Offset"
             }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
           }
         ],
         "responses": {
@@ -1417,7 +1107,7 @@
                   "items": {
                     "$ref": "#/components/schemas/KnowledgeResponse"
                   },
-                  "title": "Response Fact Listing V2 Facts Get"
+                  "title": "Response Fact Listing Api Facts Get"
                 }
               }
             }
@@ -1431,43 +1121,18 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
-          "Knowledge v2"
+          "Knowledge"
         ],
         "summary": "Fact Create",
-        "operationId": "fact_create_v2_facts_post",
-        "parameters": [
+        "operationId": "fact_create_api_facts_post",
+        "security": [
           {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
+            "AdminToken": []
           }
         ],
         "requestBody": {
@@ -1500,32 +1165,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/facts/{item_id}": {
+      "get": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Fact Get",
+        "operationId": "fact_get_api_facts__item_id__get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/facts/{item_id}": {
-      "get": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Fact Get",
-        "operationId": "fact_get_v2_facts__item_id__get",
         "parameters": [
           {
             "name": "item_id",
@@ -1535,16 +1190,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1568,33 +1213,20 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      },
+      "patch": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Fact Edit",
+        "operationId": "fact_edit_api_facts__item_id__patch",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Fact Edit",
-        "operationId": "fact_edit_v2_facts__item_id__patch",
         "parameters": [
           {
             "name": "item_id",
@@ -1604,16 +1236,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1647,32 +1269,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/facts/{item_id}/review": {
+      "post": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Fact Decide",
+        "operationId": "fact_decide_api_facts__item_id__review_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/facts/{item_id}/review": {
-      "post": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Fact Decide",
-        "operationId": "fact_decide_v2_facts__item_id__review_post",
         "parameters": [
           {
             "name": "item_id",
@@ -1682,16 +1294,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1725,32 +1327,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/rules": {
+      "get": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Rule Listing",
+        "operationId": "rule_listing_api_rules_get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/rules": {
-      "get": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Rule Listing",
-        "operationId": "rule_listing_v2_rules_get",
         "parameters": [
           {
             "name": "limit",
@@ -1774,16 +1366,6 @@
               "default": 0,
               "title": "Offset"
             }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
           }
         ],
         "responses": {
@@ -1796,7 +1378,7 @@
                   "items": {
                     "$ref": "#/components/schemas/KnowledgeResponse"
                   },
-                  "title": "Response Rule Listing V2 Rules Get"
+                  "title": "Response Rule Listing Api Rules Get"
                 }
               }
             }
@@ -1810,43 +1392,18 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
-          "Knowledge v2"
+          "Knowledge"
         ],
         "summary": "Rule Create",
-        "operationId": "rule_create_v2_rules_post",
-        "parameters": [
+        "operationId": "rule_create_api_rules_post",
+        "security": [
           {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
-            }
+            "AdminToken": []
           }
         ],
         "requestBody": {
@@ -1879,32 +1436,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/rules/{item_id}": {
+      "get": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Rule Get",
+        "operationId": "rule_get_api_rules__item_id__get",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/rules/{item_id}": {
-      "get": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Rule Get",
-        "operationId": "rule_get_v2_rules__item_id__get",
         "parameters": [
           {
             "name": "item_id",
@@ -1914,16 +1461,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -1947,33 +1484,20 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/ResourceNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      },
+      "patch": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Rule Edit",
+        "operationId": "rule_edit_api_rules__item_id__patch",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Rule Edit",
-        "operationId": "rule_edit_v2_rules__item_id__patch",
         "parameters": [
           {
             "name": "item_id",
@@ -1983,16 +1507,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -2026,32 +1540,22 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
+        }
+      }
+    },
+    "/api/rules/{item_id}/review": {
+      "post": {
+        "tags": [
+          "Knowledge"
+        ],
+        "summary": "Rule Decide",
+        "operationId": "rule_decide_api_rules__item_id__review_post",
         "security": [
           {
             "AdminToken": []
           }
-        ]
-      }
-    },
-    "/v2/rules/{item_id}/review": {
-      "post": {
-        "tags": [
-          "Knowledge v2"
         ],
-        "summary": "Rule Decide",
-        "operationId": "rule_decide_v2_rules__item_id__review_post",
         "parameters": [
           {
             "name": "item_id",
@@ -2061,16 +1565,6 @@
               "type": "string",
               "format": "uuid",
               "title": "Item Id"
-            }
-          },
-          {
-            "name": "x-admin-token",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "title": "X-Admin-Token",
-              "type": "string",
-              "nullable": true
             }
           }
         ],
@@ -2104,32 +1598,17 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "401": {
-            "$ref": "#/components/responses/AdminUnauthorized"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "description": "RISE API.",
-        "security": [
-          {
-            "AdminToken": []
-          }
-        ]
+        }
       }
     },
-    "/v2/feedback": {
+    "/api/feedback": {
       "post": {
         "tags": [
-          "Feedback v2"
+          "Feedback"
         ],
         "summary": "Feedback",
-        "operationId": "feedback_v2_feedback_post",
+        "operationId": "feedback_api_feedback_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2160,21 +1639,17 @@
                 }
               }
             }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "description": "RISE API."
+        }
       }
     },
-    "/v2/status": {
+    "/api/status": {
       "get": {
         "tags": [
-          "System v2"
+          "System"
         ],
         "summary": "Status",
-        "operationId": "status_v2_status_get",
+        "operationId": "status_api_status_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2183,24 +1658,55 @@
                 "schema": {}
               }
             }
-          },
-          "422": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "description": "RISE API."
+        }
       }
     },
-    "/v2/ready": {
+    "/api/ready": {
       "get": {
         "tags": [
-          "System v2"
+          "System"
         ],
         "summary": "Ready",
-        "operationId": "ready_v2_ready_get",
+        "operationId": "ready_api_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recent": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Recent",
+        "operationId": "recent_api_recent_get",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2211,13 +1717,74 @@
             }
           },
           "422": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "description": "RISE API."
+        }
+      }
+    },
+    "/api/db/overview": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Overview",
+        "operationId": "overview_api_db_overview_get",
+        "security": [
+          {
+            "AdminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "documents",
+              "title": "Table"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -2247,9 +1814,15 @@
             "title": "Id"
           },
           "legacy_id": {
-            "title": "Legacy Id",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Id"
           },
           "version_id": {
             "type": "string",
@@ -2309,10 +1882,16 @@
             "title": "Page"
           },
           "chunk_id": {
-            "title": "Chunk Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
           },
           "quote": {
             "type": "string",
@@ -2419,18 +1998,30 @@
             "title": "Created At"
           },
           "legacy_id": {
-            "title": "Legacy Id",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Id"
           },
           "title": {
             "type": "string",
             "title": "Title"
           },
           "fiscal_year_be": {
-            "title": "Fiscal Year Be",
-            "type": "integer",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Year Be"
           },
           "versions": {
             "items": {
@@ -2464,18 +2055,30 @@
             "title": "Created At"
           },
           "legacy_id": {
-            "title": "Legacy Id",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Id"
           },
           "title": {
             "type": "string",
             "title": "Title"
           },
           "fiscal_year_be": {
-            "title": "Fiscal Year Be",
-            "type": "integer",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Year Be"
           }
         },
         "type": "object",
@@ -2501,10 +2104,16 @@
             "title": "Page"
           },
           "chunk_id": {
-            "title": "Chunk Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
           },
           "quote": {
             "type": "string",
@@ -2545,10 +2154,16 @@
             "title": "Page"
           },
           "chunk_id": {
-            "title": "Chunk Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
           },
           "quote": {
             "type": "string",
@@ -2569,45 +2184,6 @@
           "clause"
         ],
         "title": "EvidenceResponse"
-      },
-      "Feedback": {
-        "properties": {
-          "question": {
-            "type": "string",
-            "maxLength": 400,
-            "minLength": 1,
-            "title": "Question",
-            "description": "คำถามที่ต้องการให้ความเห็น"
-          },
-          "answer": {
-            "type": "string",
-            "maxLength": 8000,
-            "minLength": 1,
-            "title": "Answer",
-            "description": "คำตอบที่แสดงในเดโม"
-          },
-          "helpful": {
-            "type": "boolean",
-            "title": "Helpful",
-            "description": "true เมื่อคำตอบมีประโยชน์"
-          },
-          "note": {
-            "type": "string",
-            "maxLength": 400,
-            "title": "Note",
-            "description": "หมายเหตุเพิ่มเติม; เก็บเมื่อเปิด audit",
-            "default": ""
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "question",
-          "answer",
-          "helpful"
-        ],
-        "title": "Feedback",
-        "description": "A small user report suitable for the append-only audit log."
       },
       "FeedbackInput": {
         "properties": {
@@ -2648,507 +2224,6 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "IngestionAcceptedResponse": {
-        "properties": {
-          "document_id": {
-            "type": "string",
-            "title": "Document Id"
-          },
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "extracting",
-              "chunking",
-              "awaiting_review",
-              "needs_ocr",
-              "failed"
-            ],
-            "title": "Status"
-          },
-          "duplicate": {
-            "type": "boolean",
-            "title": "Duplicate"
-          }
-        },
-        "type": "object",
-        "required": [
-          "document_id",
-          "job_id",
-          "status",
-          "duplicate"
-        ],
-        "title": "IngestionAcceptedResponse"
-      },
-      "IngestionChunkListResponse": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/IngestionChunkResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "count",
-          "limit",
-          "offset"
-        ],
-        "title": "IngestionChunkListResponse"
-      },
-      "IngestionChunkPatch": {
-        "properties": {
-          "reviewer": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Reviewer"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string",
-            "maxLength": 12000,
-            "minLength": 1,
-            "nullable": true
-          },
-          "clause": {
-            "title": "Clause",
-            "type": "string",
-            "maxLength": 120,
-            "nullable": true
-          },
-          "section_type": {
-            "title": "Section Type",
-            "type": "string",
-            "enum": [
-              "title",
-              "preamble",
-              "definition",
-              "fund_list",
-              "amount_table",
-              "eligibility",
-              "application",
-              "timeline",
-              "contact",
-              "other"
-            ],
-            "nullable": true
-          },
-          "section_label": {
-            "title": "Section Label",
-            "type": "string",
-            "maxLength": 160,
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "reviewer"
-        ],
-        "title": "IngestionChunkPatch",
-        "description": "A human correction to a quarantined chunk, never an approval action."
-      },
-      "IngestionChunkResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "document_id": {
-            "type": "string",
-            "title": "Document Id"
-          },
-          "doc": {
-            "type": "string",
-            "title": "Doc"
-          },
-          "fiscal_year": {
-            "title": "Fiscal Year",
-            "type": "integer",
-            "nullable": true
-          },
-          "source_filename": {
-            "type": "string",
-            "title": "Source Filename"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "page": {
-            "type": "integer",
-            "title": "Page"
-          },
-          "extraction_method": {
-            "type": "string",
-            "title": "Extraction Method"
-          },
-          "order_in_page": {
-            "type": "integer",
-            "title": "Order In Page"
-          },
-          "global_order": {
-            "type": "integer",
-            "title": "Global Order"
-          },
-          "clause": {
-            "type": "string",
-            "title": "Clause"
-          },
-          "parent_clause": {
-            "title": "Parent Clause",
-            "type": "string",
-            "nullable": true
-          },
-          "part_index": {
-            "type": "integer",
-            "title": "Part Index"
-          },
-          "section_type": {
-            "type": "string",
-            "enum": [
-              "title",
-              "preamble",
-              "definition",
-              "fund_list",
-              "amount_table",
-              "eligibility",
-              "application",
-              "timeline",
-              "contact",
-              "other"
-            ],
-            "title": "Section Type"
-          },
-          "section_label": {
-            "type": "string",
-            "title": "Section Label"
-          },
-          "amount_candidates": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Amount Candidates"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "active"
-            ],
-            "title": "Status"
-          },
-          "verified": {
-            "type": "boolean",
-            "title": "Verified"
-          },
-          "published": {
-            "type": "boolean",
-            "title": "Published"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          },
-          "last_edited_by": {
-            "title": "Last Edited By",
-            "type": "string",
-            "nullable": true
-          },
-          "last_edited_at": {
-            "title": "Last Edited At",
-            "type": "string",
-            "nullable": true
-          },
-          "edit_history": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Edit History"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "document_id",
-          "doc",
-          "source_filename",
-          "text",
-          "page",
-          "extraction_method",
-          "order_in_page",
-          "global_order",
-          "clause",
-          "part_index",
-          "section_type",
-          "section_label",
-          "status",
-          "verified",
-          "published",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "IngestionChunkResponse"
-      },
-      "IngestionDocumentListResponse": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/IngestionDocumentResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "count",
-          "limit",
-          "offset"
-        ],
-        "title": "IngestionDocumentListResponse"
-      },
-      "IngestionDocumentResponse": {
-        "properties": {
-          "document_id": {
-            "type": "string",
-            "title": "Document Id"
-          },
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename"
-          },
-          "content_sha256": {
-            "type": "string",
-            "title": "Content Sha256"
-          },
-          "content_bytes": {
-            "type": "integer",
-            "title": "Content Bytes"
-          },
-          "pages_total": {
-            "type": "integer",
-            "title": "Pages Total"
-          },
-          "pages_processed": {
-            "type": "integer",
-            "title": "Pages Processed",
-            "default": 0
-          },
-          "chunk_count": {
-            "type": "integer",
-            "title": "Chunk Count",
-            "default": 0
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "extracting",
-              "chunking",
-              "awaiting_review",
-              "needs_ocr",
-              "failed"
-            ],
-            "title": "Status"
-          },
-          "verified": {
-            "type": "boolean",
-            "title": "Verified"
-          },
-          "published": {
-            "type": "boolean",
-            "title": "Published"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          },
-          "processed_at": {
-            "title": "Processed At",
-            "type": "string",
-            "nullable": true
-          },
-          "reconciled_at": {
-            "title": "Reconciled At",
-            "type": "string",
-            "nullable": true
-          },
-          "last_edited_by": {
-            "title": "Last Edited By",
-            "type": "string",
-            "nullable": true
-          },
-          "last_edited_at": {
-            "title": "Last Edited At",
-            "type": "string",
-            "nullable": true
-          },
-          "error": {
-            "title": "Error",
-            "type": "string",
-            "nullable": true
-          },
-          "needs_ocr_pages": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Needs Ocr Pages"
-          }
-        },
-        "type": "object",
-        "required": [
-          "document_id",
-          "job_id",
-          "filename",
-          "content_sha256",
-          "content_bytes",
-          "pages_total",
-          "status",
-          "verified",
-          "published",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "IngestionDocumentResponse"
-      },
-      "IngestionJobResponse": {
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "document_id": {
-            "type": "string",
-            "title": "Document Id"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "extracting",
-              "chunking",
-              "awaiting_review",
-              "needs_ocr",
-              "failed"
-            ],
-            "title": "Status"
-          },
-          "attempts": {
-            "type": "integer",
-            "title": "Attempts",
-            "default": 0
-          },
-          "pages_total": {
-            "type": "integer",
-            "title": "Pages Total",
-            "default": 0
-          },
-          "pages_processed": {
-            "type": "integer",
-            "title": "Pages Processed",
-            "default": 0
-          },
-          "chunk_count": {
-            "type": "integer",
-            "title": "Chunk Count",
-            "default": 0
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          },
-          "started_at": {
-            "title": "Started At",
-            "type": "string",
-            "nullable": true
-          },
-          "processed_at": {
-            "title": "Processed At",
-            "type": "string",
-            "nullable": true
-          },
-          "retry_requested_at": {
-            "title": "Retry Requested At",
-            "type": "string",
-            "nullable": true
-          },
-          "error": {
-            "title": "Error",
-            "type": "string",
-            "nullable": true
-          },
-          "needs_ocr_pages": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Needs Ocr Pages"
-          }
-        },
-        "type": "object",
-        "required": [
-          "job_id",
-          "document_id",
-          "status",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "IngestionJobResponse"
-      },
       "JobResponse": {
         "properties": {
           "id": {
@@ -3162,15 +2237,27 @@
             "title": "Created At"
           },
           "legacy_id": {
-            "title": "Legacy Id",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Id"
           },
           "version_id": {
-            "title": "Version Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
           },
           "kind": {
             "type": "string",
@@ -3197,27 +2284,51 @@
             "title": "Attempts"
           },
           "owner": {
-            "title": "Owner",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
           },
           "lease_until": {
-            "title": "Lease Until",
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Until"
           },
           "heartbeat_at": {
-            "title": "Heartbeat At",
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat At"
           },
           "error": {
-            "title": "Error",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           },
           "payload": {
             "additionalProperties": true,
@@ -3251,72 +2362,110 @@
             "title": "Fund"
           },
           "fiscal_year_be": {
-            "title": "Fiscal Year Be",
-            "type": "integer",
-            "maximum": 3000.0,
-            "minimum": 2400.0,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3000.0,
+                "minimum": 2400.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Year Be"
           },
           "tier": {
-            "title": "Tier",
-            "type": "string",
-            "maxLength": 100,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
           },
           "amount_type": {
-            "title": "Amount Type",
-            "type": "string",
-            "enum": [
-              "ceiling",
-              "allocated"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ceiling",
+                  "allocated"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "nullable": true
+            "title": "Amount Type"
           },
           "amount": {
-            "title": "Amount",
-            "oneOf": [
+            "anyOf": [
               {
                 "type": "number",
                 "minimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
-            "nullable": true
+            "title": "Amount"
           },
           "total_cap": {
-            "title": "Total Cap",
-            "oneOf": [
+            "anyOf": [
               {
                 "type": "number",
                 "minimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
-            "nullable": true
+            "title": "Total Cap"
           },
           "max_grants_per_person": {
-            "title": "Max Grants Per Person",
-            "type": "integer",
-            "minimum": 1.0,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Grants Per Person"
           },
           "max_grants_per_year": {
-            "title": "Max Grants Per Year",
-            "type": "integer",
-            "minimum": 1.0,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Grants Per Year"
           },
           "note": {
-            "title": "Note",
-            "type": "string",
-            "maxLength": 4000,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           },
           "conditions": {
             "items": {
@@ -3352,9 +2501,15 @@
             "title": "Id"
           },
           "legacy_id": {
-            "title": "Legacy Id",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Id"
           },
           "kind": {
             "type": "string",
@@ -3374,36 +2529,65 @@
             "title": "Program Id"
           },
           "call_id": {
-            "title": "Call Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
           },
           "tier_id": {
-            "title": "Tier Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier Id"
           },
           "fiscal_year_be": {
-            "title": "Fiscal Year Be",
-            "type": "integer",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Year Be"
           },
           "amount_type": {
-            "title": "Amount Type",
-            "type": "string",
-            "enum": [
-              "ceiling",
-              "allocated"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ceiling",
+                  "allocated"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "nullable": true
+            "title": "Amount Type"
           },
           "amount": {
-            "title": "Amount",
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
           },
           "status": {
             "type": "string",
@@ -3424,15 +2608,27 @@
             "title": "Payload"
           },
           "reviewed_by": {
-            "title": "Reviewed By",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
           },
           "reviewed_at": {
-            "title": "Reviewed At",
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
           },
           "evidence": {
             "items": {
@@ -3511,14 +2707,26 @@
             "title": "Method"
           },
           "error": {
-            "title": "Error",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           },
           "reviewed_by": {
-            "title": "Reviewed By",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
           }
         },
         "type": "object",
@@ -3533,84 +2741,93 @@
         ],
         "title": "PageResponse"
       },
-      "PublicationRequest": {
+      "Processing": {
         "properties": {
-          "reviewer": {
+          "analysis_method": {
             "type": "string",
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Reviewer"
+            "title": "Analysis Method"
           },
-          "source_sha256": {
+          "slot_attempted": {
+            "type": "boolean",
+            "title": "Slot Attempted",
+            "default": false
+          },
+          "slot_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Model"
+          },
+          "slot_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Fallback Reason"
+          },
+          "retrieval_method": {
             "type": "string",
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Source Sha256"
+            "title": "Retrieval Method"
           },
-          "confirmed_pages": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Confirmed Pages"
+          "retrieval_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Fallback Reason"
+          },
+          "answer_attempted": {
+            "type": "boolean",
+            "title": "Answer Attempted",
+            "default": false
+          },
+          "answer_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Model"
+          },
+          "answer_fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Fallback Reason"
+          },
+          "corpus_revision": {
+            "type": "integer",
+            "title": "Corpus Revision"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": [
-          "reviewer",
-          "source_sha256",
-          "confirmed_pages"
+          "analysis_method",
+          "retrieval_method",
+          "corpus_revision"
         ],
-        "title": "PublicationRequest",
-        "description": "An explicit, page-by-page attestation by the PDF reviewer."
-      },
-      "Query": {
-        "properties": {
-          "question": {
-            "type": "string",
-            "maxLength": 400,
-            "minLength": 1,
-            "title": "Question",
-            "description": "คำถามภาษาไทยเรื่องทุนวิจัย"
-          },
-          "persona_id": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Persona Id",
-            "description": "รหัส persona สมมติในเดโม",
-            "default": "P1"
-          },
-          "history": {
-            "items": {
-              "type": "string",
-              "maxLength": 400
-            },
-            "type": "array",
-            "maxItems": 8,
-            "title": "History"
-          },
-          "model": {
-            "title": "Model",
-            "description": "คงไว้เพื่อ compatibility; safe mode จะปฏิเสธค่าที่ไม่ว่าง",
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "nullable": true
-          },
-          "context": {
-            "description": "บริบทที่สรุปแล้วของการสนทนาปัจจุบันในเบราว์เซอร์",
-            "$ref": "#/components/schemas/SessionContext",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "question"
-        ],
-        "title": "Query",
-        "description": "ถามข้อมูลทุนในเดโม ใช้ persona_id สำหรับข้อมูลผู้ใช้สมมติเท่านั้น"
+        "title": "Processing"
       },
       "QueryInput": {
         "properties": {
@@ -3622,11 +2839,22 @@
           },
           "history": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 400
             },
             "type": "array",
-            "maxItems": 12,
+            "maxItems": 8,
             "title": "History"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -3682,6 +2910,19 @@
             },
             "type": "object",
             "title": "Timings Ms"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processing": {
+            "$ref": "#/components/schemas/Processing"
           }
         },
         "type": "object",
@@ -3692,7 +2933,8 @@
           "answer_source",
           "citations",
           "verification",
-          "timings_ms"
+          "timings_ms",
+          "processing"
         ],
         "title": "QueryResponse"
       },
@@ -3747,20 +2989,26 @@
         "properties": {
           "fund": {
             "type": "string",
-            "maxLength": 160,
+            "maxLength": 250,
             "minLength": 1,
             "title": "Fund"
           },
           "tier": {
-            "title": "Tier",
-            "type": "string",
-            "maxLength": 40,
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
           },
           "fiscal_year": {
             "type": "integer",
-            "maximum": 2700.0,
-            "minimum": 2500.0,
+            "maximum": 3000.0,
+            "minimum": 2400.0,
             "title": "Fiscal Year"
           },
           "year_assumed": {
@@ -3781,8 +3029,7 @@
           "fiscal_year",
           "intent"
         ],
-        "title": "SessionContext",
-        "description": "The last resolved topic in one browser chat, never an authority for facts."
+        "title": "SessionContext"
       },
       "UploadResponse": {
         "properties": {
@@ -3797,10 +3044,16 @@
             "title": "Version Id"
           },
           "job_id": {
-            "title": "Job Id",
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
           },
           "duplicate": {
             "type": "boolean",
@@ -3825,7 +3078,7 @@
         "properties": {
           "loc": {
             "items": {
-              "oneOf": [
+              "anyOf": [
                 {
                   "type": "string"
                 },
@@ -3911,9 +3164,15 @@
             "title": "Number"
           },
           "sha256": {
-            "title": "Sha256",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
           },
           "filename": {
             "type": "string",
@@ -3939,15 +3198,27 @@
             "title": "Pages Total"
           },
           "reviewed_by": {
-            "title": "Reviewed By",
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
           },
           "reviewed_at": {
-            "title": "Reviewed At",
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
           },
           "provenance": {
             "additionalProperties": true,
@@ -3971,198 +3242,14 @@
           "provenance"
         ],
         "title": "VersionResponse"
-      },
-      "DemoQueryResponse": {
-        "type": "object",
-        "description": "ผล query ของเดโมปัจจุบัน; answer_source เป็น template หรือ blocked",
-        "properties": {
-          "answer": {
-            "type": "string"
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "slots": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "ruling": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "answer_source": {
-            "type": "string",
-            "enum": [
-              "template",
-              "blocked"
-            ]
-          },
-          "selected_model": {
-            "type": "string",
-            "nullable": true
-          },
-          "evidence": {
-            "type": "object",
-            "additionalProperties": true
-          },
-          "verify": {
-            "type": "object",
-            "properties": {
-              "ok": {
-                "type": "boolean"
-              },
-              "problems": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "ok",
-              "problems"
-            ]
-          },
-          "timings_ms": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "number"
-            }
-          },
-          "profile": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        },
-        "required": [
-          "answer",
-          "citations",
-          "slots",
-          "ruling",
-          "answer_source",
-          "selected_model",
-          "evidence",
-          "verify",
-          "timings_ms",
-          "profile"
-        ]
-      },
-      "DemoFeedbackResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          },
-          "recorded": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ok",
-          "recorded"
-        ]
       }
     },
     "securitySchemes": {
       "AdminToken": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-Admin-Token",
-        "description": "ใช้ token ที่ผู้ดูแลตั้งใน RISE_ADMIN_TOKEN"
-      }
-    },
-    "responses": {
-      "InvalidRequest": {
-        "description": "request ไม่ผ่าน validation หรือเงื่อนไข",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/HTTPValidationError"
-            }
-          }
-        }
-      },
-      "AdminUnauthorized": {
-        "description": "ไม่มีหรือ token ผู้ดูแลไม่ถูกต้อง",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "detail": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
-      "ResourceNotFound": {
-        "description": "ไม่พบเอกสาร งาน หรือ chunk",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "detail": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
-      "Conflict": {
-        "description": "สถานะปัจจุบันไม่อนุญาตให้ทำรายการ",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "detail": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
-      "RateLimited": {
-        "description": "ส่งคำขอถี่เกินกำหนด",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "detail": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
+        "name": "X-Admin-Token"
       }
     }
-  },
-  "tags": [
-    {
-      "name": "System",
-      "description": "สถานะและข้อมูลประกอบของเดโม"
-    },
-    {
-      "name": "Query",
-      "description": "ถามข้อมูลทุนและส่งความเห็นต่อคำตอบ"
-    },
-    {
-      "name": "Admin review",
-      "description": "API ผู้ดูแล ต้องส่ง X-Admin-Token เมื่อเปิดใช้งาน"
-    },
-    {
-      "name": "Admin ingestion",
-      "description": "นำเข้า PDF เป็นฉบับร่างเพื่อให้คนตรวจและอนุมัติ"
-    }
-  ]
+  }
 }

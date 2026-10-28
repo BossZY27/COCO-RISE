@@ -106,8 +106,8 @@ if ($friendMode) {
     Set-DemoEnvironment "RISE_AUDIT" $(if ($FriendDemoAudit) { "on" } else { "off" })
 }
 
-if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("RISE_ANSWER_MODE", "Process"))) {
-    Set-DemoEnvironment "RISE_ANSWER_MODE" "llm"
+if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("RISE_ANSWER_ENABLED", "Process"))) {
+    Set-DemoEnvironment "RISE_ANSWER_ENABLED" "true"
 }
 if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable("RISE_SLOT_LLM_FALLBACK", "Process"))) {
     Set-DemoEnvironment "RISE_SLOT_LLM_FALLBACK" "on"

@@ -74,13 +74,14 @@ def catalogue_details_answer() -> tuple[str, list[str], list[dict]]:
     """Expand every reviewed catalogue entry without inventing a grant's purpose or open status."""
     sections, used = [], []
     catalogue = store.fund_catalogue()
-    for group in ("ทุนส่งเสริมการวิจัย", "ทุนอุดหนุนกิจกรรม"):
+    for group in store.FUND_GROUPS.values():
         lines = [group]
         for item in catalogue:
             if item["group"] != group:
                 continue
             summary, rows = fund_summary(item["fund"])
             if not rows:
+                lines.append(f"ข้อ {item['clause']} {item['fund']} — ยังไม่มีข้อมูลเพดานที่ผ่านการตรวจยืนยันในตารางวงเงิน")
                 continue
             lines.append(f"ข้อ {item['clause']} {summary}")
             used.extend(rows)
@@ -95,7 +96,7 @@ def catalogue_details_answer() -> tuple[str, list[str], list[dict]]:
         + "\n\nข้อมูลนี้ยังไม่ใช่การยืนยันสิทธิ์หรือสถานะเปิดรับ "
         "ถ้าสนใจทุนใด ให้ระบุชื่อทุนเพื่อดูเงื่อนไขที่เอกสารระบุไว้"
     )
-    return answer, _unique([cite(row["source"]) for row in used]), used
+    return answer, _unique([cite(row["source"]) for row in [*used, *catalogue]]), used
 
 
 def _unique(items: list) -> list:
@@ -158,8 +159,19 @@ def details_answer(fund: str, clause_eight: dict | None, rule_pending: bool,
     if summary:
         parts.append(f"ตามหลักเกณฑ์กลาง {summary}")
         citations += [cite(r["source"]) for r in used]
+    if not summary:
+        entry = next((row for row in store.fund_catalogue() if row["fund"] == fund), None)
+        passage = next((chunk for chunk in store.view().CHUNKS
+                        if entry and chunk.get("doc") == entry["source"]["doc"]
+                        and chunk.get("page") == entry["source"]["page"]
+                        and chunk.get("clause") == entry["source"]["clause"]
+                        and chunk.get("status") == "active" and store.is_verified(chunk)), None)
+        if passage:
+            parts.append(f"**{fund}**\n\nตามหลักเกณฑ์กลาง ข้อ {entry['clause']} ระบุว่า:\n\n"
+                         + passage["text"] + "\n\nข้อความนี้เป็นหลักเกณฑ์กลาง ไม่ใช่วงเงินจัดสรรรายปี")
+            citations.append(cite(passage))
     if has_rule:
-        parts.append(f"ส่วนสิทธิ์ของคุณ ถามว่า ขอ{fund}ได้ไหม แล้วระบบจะตรวจตามกฎที่มีให้")
+        parts.append(f"เงื่อนไขของ{fund}สามารถสอบถามจากกฎที่ตรวจแล้ว ระบบยังไม่ตัดสินสิทธิ์รายบุคคล")
     elif rule_pending:
         parts.append("เงื่อนไขคุณสมบัติของทุนนี้อยู่ในประกาศประจำปีที่ยังรอเจ้าหน้าที่ตรวจและอนุมัติ จึงยังสรุปให้ไม่ได้")
     elif clause_eight:
@@ -168,7 +180,7 @@ def details_answer(fund: str, clause_eight: dict | None, rule_pending: bool,
         citations.append(cite(clause_eight))
     if not parts:
         return None
-    return " ".join(parts), _unique(citations), used
+    return "\n\n".join(parts), _unique(citations), used
 
 
 def applicant_status(profile: dict | None) -> tuple[bool, str] | None:

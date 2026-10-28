@@ -367,11 +367,38 @@ def define(term: str) -> dict | None:
     return view().DEFINITIONS.get(term)
 
 
-def fund_catalogue() -> list[dict]:
-    """Every fund the system holds a ceiling row for, in the order the criteria list them.
+FUND_GROUPS = {
+    "1": "ทุนส่งเสริมการวิจัย",
+    "2": "ทุนอุดหนุนกิจกรรม",
+    "3": "ทุนส่งเสริมนวัตกรรม และการบริการวิชาการ",
+}
 
-    "What funds are there" is the first thing anyone asks, and it is answerable from the rows we
-    already trust. Grouping follows the two headings in the annex: research grants, then activity grants.
+
+def _innovation_catalogue(chunks):
+    # Catalogue names only: an approved passage does not approve monetary facts.
+    names = {
+        "3.1": "ทุนสนับสนุนการได้รับทุนบริการวิชาการจากภายนอก",
+        "3.2": "ทุนสนับสนุนการได้รับทุนพัฒนานวัตกรรมจากภายนอก",
+    }
+    found = {}
+    for chunk in chunks:
+        clause = chunk.get("clause", "")
+        name = names.get(clause)
+        if (not name or chunk.get("doc") != "หลักเกณฑ์กลาง"
+                or chunk.get("status") != "active" or not is_verified(chunk)
+                or name not in re.sub(r"\s+", "", chunk["text"])):
+            continue
+        found[clause] = {"fund": name, "group": FUND_GROUPS["3"], "clause": clause,
+                         "order": [int(n) for n in clause.split(".")], "total_cap": None,
+                         "source": {"doc": chunk["doc"], "page": chunk["page"], "clause": clause}}
+    return list(found.values())
+
+
+def fund_catalogue() -> list[dict]:
+    """Reviewed fund names from ceiling rows and approved annex passages.
+
+    Separate programs under the same annex clause remain available for follow-up
+    questions; renderers count distinct clauses, rather than monetary rows.
     """
     seen: dict[str, dict] = {}
     for fact in view().FACTS:
@@ -379,11 +406,15 @@ def fund_catalogue() -> list[dict]:
                 or fact["fund"] in seen):
             continue
         clause = fact["source"]["clause"].replace("บัญชีแนบท้าย ข้อ ", "")
-        group = "ทุนส่งเสริมการวิจัย" if clause.startswith("1.") else "ทุนอุดหนุนกิจกรรม"
+        group = FUND_GROUPS.get(clause.split(".")[0])
+        if group is None:
+            continue
         order = [int(part) for part in clause.split(".") if part.isdigit()]
         seen[fact["fund"]] = {"fund": fact["fund"], "group": group, "clause": clause,
                               "order": order, "total_cap": fact["total_cap"],
                               "source": fact["source"]}
+    for entry in _innovation_catalogue(view().CHUNKS):
+        seen.setdefault(entry["fund"], entry)
     return sorted(seen.values(), key=lambda f: f["order"])
 
 
@@ -406,6 +437,11 @@ def _annex_index() -> tuple[dict[str, list[str]], set]:
         if fact["fund"] not in funds[clause]:
             funds[clause].append(fact["fund"])
         pages.add(source.get("page"))
+    for entry in _innovation_catalogue(view().CHUNKS):
+        funds.setdefault(entry["clause"], [])
+        if entry["fund"] not in funds[entry["clause"]]:
+            funds[entry["clause"]].append(entry["fund"])
+        pages.add(entry["source"]["page"])
     return funds, pages
 
 
@@ -516,12 +552,12 @@ def rules_for(fund: str | None, fiscal_year: int | None) -> list[dict]:
     """A rule with fiscal_year None comes from the central criteria and applies to every year."""
     return [r for r in view().RULES if r["fund"] == fund
             and (r["fiscal_year"] is None or not fiscal_year or r["fiscal_year"] == fiscal_year)
-            and _document_reviewed(r["source"]["doc"])]
+            and (is_verified(r) or _document_reviewed(r["source"]["doc"]))]
 
 
 def rules_waiting(fund: str | None) -> bool:
     """A rule for the fund exists but comes from a scan nobody has approved yet."""
-    return any(r["fund"] == fund and not _document_reviewed(r["source"]["doc"]) for r in view().RULES)
+    return any(r["fund"] == fund and not is_verified(r) and not _document_reviewed(r["source"]["doc"]) for r in view().RULES)
 
 
 def _document_reviewed(doc: str) -> bool:
@@ -572,7 +608,8 @@ def view():
 def make_corpus(facts, chunks, rules, personas, aliases, revision=0):
     from types import SimpleNamespace
     from app.modules.knowledge.context import use_corpus
-    funds = sorted({f["fund"] for f in facts}, key=len, reverse=True)
+    funds = sorted({f["fund"] for f in facts} | {r["fund"] for r in _innovation_catalogue(chunks)},
+                   key=len, reverse=True)
     vocab = set(TERMS) | set(TIERS) | set(funds)
     tokens = [tokenize(c["text"], vocab) for c in chunks]
     corpus = SimpleNamespace(

@@ -39,12 +39,10 @@ def migrated():
 
 @pytest.fixture
 def runtime(migrated, tmp_path):
-    settings = Settings(_env_file=None, database_url=URL, files_dir=tmp_path / "pdfs",
+    settings = Settings(_env_file=None, database_url=URL, files_dir=tmp_path / "pdfs", chroma_dir=tmp_path / "chroma",
                         source_dir=ROOT / "funds-data", admin_token="integration-test-token",
                         llm_base="http://127.0.0.1:1", answer_enabled=False)
     services = Services(settings)
-    from app.infrastructure.postgres.compat import LegacyAdapter
-    services.legacy = LegacyAdapter(services)
     with services.database.transaction() as s:
         for table in reversed(Base.metadata.sorted_tables):
             if table.name != "corpus_revision":
@@ -165,65 +163,60 @@ def test_knowledge_evidence_transaction_decimal_review_and_no_overwrite(runtime)
 
 def test_v2_contract_auth_validation_errors_and_feedback(client):
     headers = {"X-Admin-Token":"integration-test-token"}
-    assert client.get("/v2/documents").status_code == 401
-    assert client.get("/v2/documents", headers={"X-Admin-Token":"bad"}).status_code == 401
-    assert client.get("/v2/documents?limit=0", headers=headers).status_code == 422
-    assert client.get(f"/v2/documents/{uuid.uuid4()}", headers=headers).status_code == 404
-    assert client.post("/v2/query", json={"question":" "}).status_code == 422
-    assert client.post("/v2/query", json={"question":"x", "extra":True}).status_code == 422
-    assert client.post("/v2/feedback", json={"request_id":str(uuid.uuid4()),"helpful":True}).status_code == 404
-    response = client.post("/v2/query", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร"})
+    assert client.get("/api/documents").status_code == 401
+    assert client.get("/api/documents", headers={"X-Admin-Token":"bad"}).status_code == 401
+    assert client.get("/api/documents?limit=0", headers=headers).status_code == 422
+    assert client.get(f"/api/documents/{uuid.uuid4()}", headers=headers).status_code == 404
+    assert client.post("/api/query", json={"question":" "}).status_code == 422
+    assert client.post("/api/query", json={"question":"x", "extra":True}).status_code == 422
+    assert client.post("/api/feedback", json={"request_id":str(uuid.uuid4()),"helpful":True}).status_code == 404
+    response = client.post("/api/query", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร"})
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "answered" and body["answer_source"] == "template" and body["verification"]["ok"]
     assert body["citations"] and client.get(body["citations"][0]["url"]).status_code == 200
-    assert client.post("/v2/feedback", json={"request_id":body["request_id"],"helpful":True}).status_code == 201
-    assert client.get("/v2/ready").json() == {"ready":True}
-    assert client.get("/v2/status").json()["status"] == "degraded"
+    assert client.post("/api/feedback", json={"request_id":body["request_id"],"helpful":True}).status_code == 201
+    assert client.get("/api/ready").json() == {"ready":True}
+    assert client.get("/api/status").json()["status"] == "degraded"
     for _ in range(limits.CLIENT_RATE_LIMIT):
-        response = client.post("/v2/query", json={"question":"x"})
+        response = client.post("/api/query", json={"question":"x"})
     assert response.status_code == 429 and "retry-after" in response.headers
 
 
 def test_document_api_complete_flow(client):
     headers = {"X-Admin-Token":"integration-test-token", "Content-Type":"application/pdf"}
-    response = client.post("/v2/documents", headers=headers, content=pdf())
+    response = client.post("/api/documents", headers=headers, content=pdf())
     assert response.status_code == 202, response.text
     body = response.json()
-    assert client.get(f"/v2/versions/{body['version_id']}/source", headers=headers).status_code == 200
-    assert client.get(f"/v2/sources/{body['version_id']}/pages/1").status_code == 404
-    assert client.post(f"/v2/versions/{body['version_id']}/publish", headers={"X-Admin-Token":"integration-test-token"},
+    assert client.get(f"/api/versions/{body['version_id']}/source", headers=headers).status_code == 200
+    assert client.get(f"/api/sources/{body['version_id']}/pages/1").status_code == 404
+    assert client.post(f"/api/versions/{body['version_id']}/publish", headers={"X-Admin-Token":"integration-test-token"},
                        json={"reviewer":"Human"}).status_code == 409
-    assert client.post("/v2/documents", headers=headers, content=b"not a pdf").status_code == 422
-    assert client.post("/v2/documents", headers=headers, content=pdf()).status_code == 202
+    assert client.post("/api/documents", headers=headers, content=b"not a pdf").status_code == 422
+    assert client.post("/api/documents", headers=headers, content=pdf()).status_code == 202
 
 
 def test_withdrawal_during_llm_wait_blocks_result(runtime):
-    class WithdrawingModel:
-        def candidate(self, template, citations):
-            with runtime.database.transaction() as s:
-                v = s.scalar(select(Version).where(Version.current.is_(True)))
-                uid = v.id
-            runtime.repository.withdraw(uid, "Human")
-            return template, "test-digest"
-    runtime.query.answer_model = WithdrawingModel()
+    def withdrawing_candidate(template, citations, timeout=None):
+        with runtime.database.transaction() as s:
+            v = s.scalar(select(Version).where(Version.current.is_(True)))
+            uid = v.id
+        runtime.repository.withdraw(uid, "Human")
+        return template, "test-digest"
+    runtime.settings.answer_enabled = True
+    runtime.ollama.candidate = withdrawing_candidate
     result = runtime.query.run("เพดานทุนวิจัยสถาบันเท่าไร", [])
     assert result["status"] == "blocked" and not result["citations"]
 
 
-def test_v1_uses_postgres_personas_template_sse_and_upload(client, monkeypatch):
-    from app.infrastructure.ollama import legacy as llm
-    monkeypatch.setattr(llm, "enabled", lambda: False)
-    assert len(client.get("/v1/personas").json()) == 6
-    response = client.post("/v1/query", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร", "persona_id":"P1"})
-    assert response.status_code == 200, response.text
-    assert response.json()["verify"]["ok"] and response.json()["answer_source"] == "template"
-    stream = client.post("/v1/query/stream", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร"})
-    assert stream.status_code == 200 and '"type": "done"' in stream.text
-    upload = client.post("/v1/admin/documents", headers={"X-Admin-Token":"integration-test-token", "Content-Type":"application/pdf"}, content=pdf())
-    assert upload.status_code == 202, upload.text
-    identifier = upload.json()["document_id"]
-    assert client.get(f"/v1/admin/documents/{identifier}", headers={"X-Admin-Token":"integration-test-token"}).status_code == 200
+def test_only_api_routes_are_served(client):
+    for path in ("/v1/query", "/v2/query", "/api/update", "/v1/query/stream"):
+        assert client.post(path, json={"question":"มีทุนอะไรบ้าง"}).status_code == 404
+    assert client.get("/v1/personas").status_code == 404
+    response = client.post("/api/query", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร"})
+    assert response.status_code == 200
+    assert response.json()["verification"]["ok"]
+    assert "persona" not in response.text
 
 
 def test_pgvector_exact_cosine_generation_is_complete_before_activation(runtime):
@@ -310,28 +303,29 @@ def test_v2_fact_and_rule_api_create_edit_review_contract(client, runtime):
     ref = {"version_id":str(version_id), "page":1, "chunk_id":str(chunk["id"]), "quote":"1250.50"}
     headers = {"X-Admin-Token":"integration-test-token"}
     fact = {"fund":"ทุนทดสอบ", "amount_type":"ceiling", "amount":"1250.50", "evidence":[ref]}
-    response = client.post("/v2/facts", headers=headers, json=fact)
+    response = client.post("/api/facts", headers=headers, json=fact)
     assert response.status_code == 201, response.text
     item = response.json()
     assert item["amount"] == "1250.50" and item["status"] == "draft"
-    assert client.patch(f"/v2/facts/{item['id']}", headers=headers, json=fact).status_code == 200
-    assert client.post(f"/v2/facts/{item['id']}/review", headers=headers,
+    assert client.patch(f"/api/facts/{item['id']}", headers=headers, json=fact).status_code == 200
+    assert client.post(f"/api/facts/{item['id']}/review", headers=headers,
                        json={"reviewer":"Human","decision":"approved"}).status_code == 200
-    assert client.patch(f"/v2/facts/{item['id']}", headers=headers, json=fact).status_code == 409
+    assert client.patch(f"/api/facts/{item['id']}", headers=headers, json=fact).status_code == 409
     rule = {"fund":"ทุนทดสอบ", "conditions":[{"field":"department","op":"eq", "value":"วิทยาลัยการคอมพิวเตอร์",
             "fail_reason":"ผู้ขอรับทุนต้องสังกัดวิทยาลัยการคอมพิวเตอร์"}], "evidence":[ref]}
-    response = client.post("/v2/rules", headers=headers, json=rule)
+    response = client.post("/api/rules", headers=headers, json=rule)
     assert response.status_code == 201, response.text
-    assert client.post(f"/v2/rules/{response.json()['id']}/review", headers=headers,
+    assert client.post(f"/api/rules/{response.json()['id']}/review", headers=headers,
                        json={"reviewer":"Human","decision":"rejected"}).status_code == 200
-    assert client.post("/v2/rules", headers=headers, json={**rule,"conditions":[{"field":"password","op":"eq","value":"x","fail_reason":"x"}]}).status_code == 422
+    assert client.post("/api/rules", headers=headers, json={**rule,"conditions":[{"field":"password","op":"eq","value":"x","fail_reason":"x"}]}).status_code == 422
 
 
-def test_v1_feedback_and_query_audit_use_database(client, runtime):
-    response = client.post("/v1/feedback", json={"question":"test question", "answer":"test answer", "helpful":True})
-    assert response.status_code == 200 and response.json()["recorded"]
-    records = client.get("/v1/recent", headers={"X-Admin-Token":"integration-test-token"}).json()
-    assert any(r["question"] == "test question" for r in records)
+def test_feedback_and_query_audit_use_database(client, runtime):
+    result = client.post("/api/query", json={"question":"เพดานทุนวิจัยสถาบันเท่าไร"}).json()
+    response = client.post("/api/feedback", json={"request_id":result["request_id"], "helpful":True})
+    assert response.status_code == 201
+    records = client.get("/api/recent", headers={"X-Admin-Token":"integration-test-token"}).json()
+    assert any(r["question"] == "เพดานทุนวิจัยสถาบันเท่าไร" for r in records)
 
 
 def test_document_quota_duplicate_and_safe_pdf_dimensions(runtime):

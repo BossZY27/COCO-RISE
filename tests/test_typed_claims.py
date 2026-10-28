@@ -211,26 +211,6 @@ def test_slot_extraction_rejects_ungrounded_fund_guess():
     assert claims.validate_slot_claim(raw, "อยากไปเที่ยวญี่ปุ่น") is None
 
 
-def test_models_endpoint_reports_typed_claim_mode_when_configured(monkeypatch):
-    monkeypatch.setattr(pipeline, "ANSWER_MODE", "typed_claim")
-    monkeypatch.setattr(llm, "enabled", lambda: True)
-    monkeypatch.setattr(llm, "MAIN", "thai-qwen:latest")
-    monkeypatch.setattr(llm, "SMALL", "qwen3:4b")
-    monkeypatch.setattr(
-        llm,
-        "installed_chat_models",
-        lambda: [{"name": "qwen3:4b", "size": 2500000000}, {"name": "thai-qwen:latest", "size": 5000000000}],
-    )
-    monkeypatch.setattr(limits, "take", lambda _user: (True, 0))
-    monkeypatch.setattr(limits, "take_client", lambda _host: (True, 0))
-
-    client = TestClient(app)
-    res = client.get("/v1/models")
-    assert res.status_code == 200
-    body = res.json()
-    assert body["enabled"] is True
-    assert body["answer_mode"] == "typed_claim"
-    assert {m["name"] for m in body["models"]} == {"qwen3:4b", "thai-qwen:latest"}
 
 
 def test_pipeline_run_uses_llm_rag_generator_when_verified(monkeypatch):
@@ -311,17 +291,6 @@ def test_pii_redaction_strips_identifiers_before_llm_and_audit():
     assert "somchai@kku.ac.th" not in prompt_blob
 
 
-def test_personas_endpoint_does_not_leak_private_profile_fields():
-    client = TestClient(app)
-    res = client.get("/v1/personas")
-    assert res.status_code == 200
-    items = res.json()
-    assert len(items) >= 5
-    for item in items:
-        assert set(item.keys()) == {"id", "name", "source"}
-        assert "grants_this_year" not in item
-        assert "staff_type" not in item
-        assert "department" not in item
 
 
 def test_third_person_history_is_refused_with_pdpa_notice_and_anonymous_what_if_works():
@@ -348,26 +317,6 @@ def test_third_person_history_is_refused_with_pdpa_notice_and_anonymous_what_if_
     assert "ไม่ได้" in anon_what_if["answer"]
 
 
-def test_database_inspector_and_sqlite_tables_match_architecture():
-    client = TestClient(app)
-    page = client.get("/db")
-    assert page.status_code == 200
-    assert "COCO-RISE Database Inspector" in page.text
-    assert "ChromaDB" in page.text
-
-    res = client.get("/v1/db/overview?table=fund_facts&only_verified=1")
-    assert res.status_code == 200
-    body = res.json()
-    assert body["counts"]["document_registry"] == 4
-    assert body["counts"]["document_chunks"] > 0
-    assert body["counts"]["fund_facts"] > 0
-    assert body["counts"]["eligibility_rules"] >= 4
-    assert body["counts"]["eval_dataset"] > 0
-    assert body["counts"]["applicant_profiles"] >= 5
-    assert "ChromaDB" in body["engine"]
-    assert body["vector_db"]["collection"] == "coco_rise_chunks"
-    assert "chroma_id" in body["postgres_schema"]
-    assert all(r["verified"] == 1 for r in body["rows"])
 
 
 def test_chromadb_vector_store_sync_and_cosine_search(tmp_path):

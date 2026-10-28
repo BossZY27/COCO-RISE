@@ -4,6 +4,7 @@ These tests exercise user-visible behaviour. They do not change the reviewed dat
 replace the local model only where a deliberately unsafe draft is needed.
 """
 
+from app.modules.query import analysis
 import asyncio
 import re
 import sys
@@ -394,7 +395,7 @@ def test_catalogue_citations_cover_every_source_page_used_by_the_fund_list():
 
 def test_relative_year_words_use_the_real_thai_fiscal_year_while_an_omitted_year_uses_data_default(
         monkeypatch):
-    monkeypatch.setattr(pipeline, "thai_fiscal_year", lambda: 2580)
+    monkeypatch.setattr(analysis, "thai_fiscal_year", lambda: 2580)
 
     assert pipeline.analyze("ทุนวิจัยสถาบันปีนี้ได้เท่าไร")["fiscal_year"] == 2580
     assert pipeline.analyze("ทุนวิจัยสถาบันปีหน้าได้เท่าไร")["fiscal_year"] == 2581
@@ -406,7 +407,7 @@ def test_relative_year_words_use_the_real_thai_fiscal_year_while_an_omitted_year
 
 def test_relative_year_is_recomputed_without_restarting_the_server(monkeypatch):
     current = [2580]
-    monkeypatch.setattr(pipeline, "thai_fiscal_year", lambda: current[0])
+    monkeypatch.setattr(analysis, "thai_fiscal_year", lambda: current[0])
 
     assert pipeline.analyze("ทุนวิจัยสถาบันปีนี้ได้เท่าไร")["fiscal_year"] == 2580
     current[0] = 2581

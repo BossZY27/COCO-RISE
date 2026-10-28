@@ -62,7 +62,7 @@ class RequestBodyLimitMiddleware:
             return
 
         path = scope.get("path", "")
-        pdf_upload = path == "/v2/documents" or (path.startswith("/v2/documents/") and path.endswith("/versions"))
+        pdf_upload = path == "/api/documents" or (path.startswith("/api/documents/") and path.endswith("/versions"))
         maximum = self.path_limits.get(path, 15 * 1024 * 1024 if pdf_upload else self.default_max)
         headers = {key.lower(): value for key, value in scope.get("headers", [])}
         raw_length = headers.get(b"content-length")

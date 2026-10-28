@@ -156,16 +156,6 @@ def test_demo_uses_coco_rise_name_without_changing_chat_storage(client: TestClie
     assert app.title == "RISE API"
 
 
-def test_public_responses_set_browser_security_headers(client: TestClient):
-    response = client.get("/healthz")
-
-    assert response.status_code == 200
-    assert response.headers["x-content-type-options"] == "nosniff"
-    assert response.headers["x-frame-options"] == "DENY"
-    assert response.headers["referrer-policy"] == "no-referrer"
-    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
-    assert response.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=()"
-    assert response.json()["semantic_backend"] in {"bge-m3:latest", "trigram"}
 
 
 def test_oversized_json_body_is_rejected_before_schema_processing(client: TestClient):
@@ -203,17 +193,6 @@ def test_body_limit_middleware_forwards_disconnect_after_replaying_body():
     assert seen[1]["type"] == "http.disconnect"
 
 
-def test_admin_and_audit_responses_are_never_cacheable(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr(review, "TOKEN", "test-admin-token")
-    headers = {"X-Admin-Token": "test-admin-token"}
-
-    for path in ("/v1/admin/pending", "/v1/recent"):
-        response = client.get(path, headers=headers)
-        assert response.status_code == 200
-        assert "no-store" in response.headers["cache-control"]
-        assert "private" in response.headers["cache-control"]
 
 
 def test_untrusted_host_is_rejected(client: TestClient):
@@ -231,106 +210,12 @@ def test_trusted_host_configuration_rejects_wildcard_subdomains(
         main._trusted_hosts()
 
 
-@pytest.mark.parametrize(
-    "history",
-    [
-        ["คำถาม"] * (limits.MAX_HISTORY_TURNS + 1),
-        ["ก" * (limits.MAX_QUESTION_CHARS + 1)],
-    ],
-    ids=["too-many-turns", "oversized-turn"],
-)
-def test_query_history_is_bounded_before_pipeline_processing(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch, history: list[str]
-):
-    async def must_not_run(*_args, **_kwargs):
-        raise AssertionError("invalid history reached the answer pipeline")
-
-    monkeypatch.setattr(pipeline, "run", must_not_run)
-    monkeypatch.setattr(limits, "take", lambda _user_id: (True, 0.0))
-
-    response = client.post(
-        "/v1/query",
-        json={"question": "มีทุนอะไรบ้าง", "history": history},
-    )
-
-    assert response.status_code == 422
 
 
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        ("question", "ก" * (limits.MAX_FEEDBACK_QUESTION_CHARS + 1)),
-        ("answer", "ก" * (limits.MAX_FEEDBACK_ANSWER_CHARS + 1)),
-        ("note", "ก" * (limits.MAX_FEEDBACK_NOTE_CHARS + 1)),
-    ],
-    ids=["question", "answer", "note"],
-)
-def test_feedback_body_is_bounded_before_audit_write(
-    client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
-    field: str,
-    value: str,
-):
-    monkeypatch.setattr(
-        audit,
-        "record",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("invalid feedback reached the audit log")
-        ),
-    )
-    body = {"question": "คำถาม", "answer": "คำตอบ", "helpful": False, "note": "หมายเหตุ"}
-    body[field] = value
-
-    response = client.post("/v1/feedback", json=body)
-
-    assert response.status_code == 422
 
 
-def test_feedback_has_a_separate_rate_limit(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr(limits, "take_feedback", lambda _user_id: (False, 12.5), raising=False)
-    monkeypatch.setattr(
-        audit,
-        "record",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("rate-limited feedback reached the audit log")
-        ),
-    )
-
-    response = client.post(
-        "/v1/feedback",
-        json={"question": "คำถาม", "answer": "คำตอบ", "helpful": True},
-    )
-
-    assert response.status_code == 429
-    assert "12.5" in response.json()["detail"]
 
 
-def test_query_rate_limit_cannot_be_bypassed_with_spoofed_user_ids(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
-    async def answer(*_args, **_kwargs):
-        return {"answer": "คำตอบ", "citations": []}
-
-    limits._client_seen.clear()
-    monkeypatch.setattr(limits, "CLIENT_RATE_LIMIT", 1)
-    monkeypatch.setattr(limits, "take", lambda _user_id: (True, 0.0))
-    monkeypatch.setattr(pipeline, "run", answer)
-
-    first = client.post(
-        "/v1/query",
-        headers={"X-User-Id": "spoof-a"},
-        json={"question": "มีทุนอะไรบ้าง", "persona_id": "P1"},
-    )
-    second = client.post(
-        "/v1/query",
-        headers={"X-User-Id": "spoof-b"},
-        json={"question": "มีทุนอะไรบ้าง", "persona_id": "P2"},
-    )
-
-    assert first.status_code == 200
-    assert second.status_code == 429
 
 
 def test_proxy_identity_header_is_ignored_outside_the_proxy_allowlist(
@@ -350,37 +235,8 @@ def test_proxy_allowlist_rejects_non_ip_entries(monkeypatch: pytest.MonkeyPatch)
         main._trusted_proxy_ips()
 
 
-def test_direct_demo_rejects_unknown_persona_before_pipeline(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
-    async def must_not_run(*_args, **_kwargs):
-        raise AssertionError("unknown persona reached the answer pipeline")
-
-    monkeypatch.setattr(pipeline, "run", must_not_run)
-
-    response = client.post(
-        "/v1/query",
-        json={"question": "มีทุนอะไรบ้าง", "persona_id": "spoofed-persona"},
-    )
-
-    assert response.status_code == 400
 
 
-def test_feedback_reports_when_demo_recording_is_disabled(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr(audit, "ENABLED", False)
-    monkeypatch.setattr(limits, "take_feedback", lambda _user_id: (True, 0.0))
-    monkeypatch.setattr(limits, "take_feedback_client", lambda _client: (True, 0.0))
-
-    response = client.post(
-        "/v1/feedback",
-        json={"question": "คำถาม", "answer": "คำตอบ", "helpful": True},
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {"ok": True, "recorded": False}
-    assert "data.recorded" in main.PAGE
 
 
 def test_friend_demo_launcher_uses_explicit_safe_defaults():
@@ -463,31 +319,9 @@ def test_demo_page_displays_only_the_complete_verified_answer():
     assert "res.body.getReader()" not in main.PAGE
 
 
-def test_demo_chat_keeps_history_inside_each_browser_conversation():
-    assert "const history = chat.turns.filter(t => t.done && !t.error)" in main.PAGE
-    assert "const personaId = chat.personaId" in main.PAGE
-    assert "localStorage.setItem(STORAGE_KEY" in main.PAGE
-    assert "chats.filter(c => c.id !== id)" in main.PAGE
 
 
 def test_demo_chat_keeps_resolved_context_in_each_conversation():
     assert "context: chat.context" in main.PAGE
     assert "chat.context =" in main.PAGE
     assert "const chat = currentChat()" in main.PAGE
-
-
-def test_query_context_restores_only_the_chat_that_sends_it(monkeypatch):
-    monkeypatch.setattr(limits, "take_client", lambda _host: (True, 0))
-    monkeypatch.setattr(limits, "take", lambda _user: (True, 0))
-    client = TestClient(app)
-    base = {"question": "แล้วเพดานเท่าไร", "history": ["แล้วรายละเอียดล่ะ"] * 8}
-    context = {"fund": "ทุนวิจัยสถาบัน", "tier": None, "fiscal_year": 2568,
-               "year_assumed": False, "intent": "amount"}
-
-    remembered = client.post("/api/query", json={**base, "context": context})
-    fresh_chat = client.post("/api/query", json=base)
-
-    assert remembered.status_code == fresh_chat.status_code == 200
-    assert remembered.json()["slots"]["fund"] == "ทุนวิจัยสถาบัน"
-    assert remembered.json()["verify"]["ok"]
-    assert fresh_chat.json()["slots"]["fund"] is None

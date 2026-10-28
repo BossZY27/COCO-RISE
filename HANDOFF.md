@@ -1,3 +1,5 @@
+> สถานะ runtime ปัจจุบัน (28 ตุลาคม 2569): ผู้ใช้อนุมัติการรวมเป็น `/api/*` และให้ LLM เรียบเรียงจากหลักฐานพร้อม verifier/template fallback ใช้ PostgreSQL + ChromaDB ตาม [architecture](docs/architecture.md) และ [runbook](docs/runbook.md) เนื้อหาด้านล่างเป็นบันทึกเดิม; กฎ human review, source grounding และการแยกประเภทวงเงินยังใช้เหมือนเดิม
+
 > Historical demo/research context. The implementation plan now authorizes the PostgreSQL MVP and the verified v2 candidate path; v1 remains deterministic. See [current architecture](docs/architecture.md) and [runbook](docs/runbook.md). This update does not approve any source data.
 
 # เอกสารส่งต่องาน RISE

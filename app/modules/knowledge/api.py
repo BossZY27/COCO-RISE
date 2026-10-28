@@ -6,7 +6,7 @@ from app.core import security as limits
 from app.modules.query.schemas import FeedbackInput, QueryInput, QueryResponse
 from app.modules.knowledge.schemas import Decision, KnowledgeInput, KnowledgeResponse, Record
 
-router = APIRouter(prefix="/v2")
+router = APIRouter(prefix="/api")
 
 def knowledge_routes(kind, path):
     def listing(request: Request, _: Admin, limit: Limit = 50, offset: Offset = 0):
@@ -29,7 +29,7 @@ def knowledge_routes(kind, path):
         ("", create, "POST", KnowledgeResponse, 201), ("/{item_id}", edit, "PATCH", KnowledgeResponse, 200),
         ("/{item_id}/review", decide, "POST", KnowledgeResponse, 200)]:
         router.add_api_route(path + suffix, endpoint, methods=[method], response_model=response_model,
-                             status_code=code, tags=["Knowledge v2"], name=kind + "_" + endpoint.__name__)
+                             status_code=code, tags=["Knowledge"], name=kind + "_" + endpoint.__name__)
 
 
 knowledge_routes("fact", "/facts")

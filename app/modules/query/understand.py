@@ -83,7 +83,7 @@ THIS_YEAR = ("ปีงบประมาณนี้", "ปีงบนี้",
 
 def normalize(text: str) -> str:
     """One spelling for words typed several ways, Arabic digits, and single spaces."""
-    text = text.translate(_THAI_DIGITS)
+    text = text.translate(_THAI_DIGITS).replace("เงื่ิอนไข", "เงื่อนไข")
     for typed, meant in SPELLINGS:
         text = text.replace(typed, meant)
     return " ".join(text.split())
@@ -263,7 +263,7 @@ def wants_tier_list(text: str) -> bool:
 
 
 def wants_details(text: str) -> bool:
-    return any(w in text for w in DETAIL_WORDS)
+    return any(w in text for w in DETAIL_WORDS) or "เงื่อนไขในการรับ" in text
 
 
 def is_hypothetical(text: str) -> bool:

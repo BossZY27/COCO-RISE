@@ -6,9 +6,9 @@ from app.core import security as limits
 from app.modules.query.schemas import FeedbackInput, QueryInput, QueryResponse
 from app.modules.knowledge.schemas import Decision, KnowledgeInput, KnowledgeResponse, Record
 
-router = APIRouter(prefix="/v2")
+router = APIRouter(prefix="/api")
 
-@router.post("/feedback", response_model=Record, status_code=201, tags=["Feedback v2"])
+@router.post("/feedback", response_model=Record, status_code=201, tags=["Feedback"])
 def feedback(body: FeedbackInput, request: Request):
     remote = request.client.host if request.client else "anonymous"
     allowed, wait = limits.take_feedback_client(remote)

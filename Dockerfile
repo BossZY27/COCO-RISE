@@ -11,7 +11,7 @@ COPY alembic.ini .
 COPY data ./data
 COPY docs ./docs
 COPY funds-data ./funds-data
-RUN useradd --create-home --uid 10001 rise && mkdir -p /srv/rise/data/private /srv/rise/logs && chown -R rise:rise /srv/rise
+RUN useradd --create-home --uid 10001 rise && mkdir -p /srv/rise/data/private /srv/rise/data/chroma_db /srv/rise/logs && chown -R rise:rise /srv/rise
 USER rise
 EXPOSE 8077
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8077", "--workers", "1"]

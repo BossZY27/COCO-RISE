@@ -1,23 +1,28 @@
-# Evaluation protocol (no results claimed)
+# การประเมินตามข้อเสนอ
 
-Compare three methods from the report on the same frozen, human-confirmed question set and same published corpus revision:
+เปรียบเทียบด้วยคำถามที่ผู้ตรวจยืนยันและ corpus revision เดียวกัน:
 
-1. Text-only retrieval and model answer.
-2. BM25+BGE-M3 with RRF, separately selected structured facts/rules, model candidate and verification/fallback (v2).
-3. The verified deterministic template path (v1/reference).
+1. Text RAG: ค้น BGE-M3 แล้วให้โมเดลสร้างคำตอบจากข้อความ
+2. Hybrid Text RAG: ค้น BM25 + BGE-M3 รวมด้วย RRF แล้วสร้างคำตอบจากข้อความ
+3. วิธีที่เสนอ: การค้นแบบผสมร่วมกับ structured facts/rules และการตรวจคำตอบ/Template สำรอง
 
-Confirm this mapping against the report before publishing results. Existing offline comparison tools in `scripts/compare_retrieval.py` and `scripts/compare_answer_paths.py` remain regression/exploration tools, not independent research results. Do not report pre-MVP demo timings as MVP results.
+ใช้โมเดลและการตั้งค่าร่วมกัน บันทึก PDF version/checksum, corpus revision, model digests, prompt, CPU/RAM และ cold/warm state แยกชุดพัฒนาจากชุดทดสอบที่ยังไม่ใช้ปรับระบบ
 
-Freeze document-version checksums, approvals, embedding/answer model digests, prompt version, corpus revision, machine/CPU settings and temperature. Separate development/held-out sets; never tune against the final test set. Include no-answer, ambiguous alias/tier/year, pending OCR, wrong fiscal year, ceiling versus annual allocation, unsupported country/profile recommendations, cross-fund rules and prompt injection.
+| ผลที่ต้องรายงานแยก | วิธีประเมิน |
+| --- | --- |
+| Retrieval | Hit/Recall@k และ MRR เทียบหน้า/chunk ที่ผู้ตรวจเลือก |
+| คำตอบ | ผู้ตรวจประเมินความถูกต้อง ความครบถ้วน ตัวเลข ปี ประเภทวงเงิน หน่วย และเงื่อนไข |
+| อ้างอิง | หน้าและรุ่นเอกสารรองรับทุกข้อกล่าวอ้างหรือไม่ |
+| การงดตอบ | ถามกลับ/งดตอบเมื่อกำกวม ไม่มีข้อมูล หรือยังรอตรวจได้ถูกต้องหรือไม่ |
+| False acceptance | เพิ่มเลข สลับทุน/ชั้น/ปี เปลี่ยน negation หรือทิ้งเงื่อนไขแล้ว gate ยอมรับหรือไม่ |
+| Latency | เวลารายขั้นและรวม p50/p95 แยก cold/warm, model outage และ fallback |
 
-Report separately:
+ผลที่ถอยไปใช้ BM25 หรือ Template ต้องระบุแยก ไม่รวมเป็นผล BGE-M3/LLM สำเร็จ `processing` และ `timings_ms` ใน query response ใช้ประกอบการตรวจได้ ประวัติ query เก็บ verification/candidate problems และ model revision โดยไม่เผยแพร่ candidate ที่ถูกทิ้ง
 
-| Measure | Evidence |
-|---|---|
-| Retrieval recall/rank | human-selected supporting chunk/page; BM25, vector and RRF ablations |
-| Answer correctness/completeness | reviewers compare claims, money units, amount type/year and retained conditions |
-| Citation correctness/coverage | document/version/page/chunk supports every claim, including superseded-source cases |
-| False acceptance | deliberately wrong numbers, year, fund, guarantee, negation and dropped conditions; measure gate acceptance |
-| Latency | stage timings, p50/p95, cold/warm model, outage/fallback and concurrent request conditions |
+สคริปต์เปรียบเทียบ retrieval เดิมเป็นการทดลองเฉพาะการค้น ไม่ใช่ผลเปรียบเทียบคำตอบครบสามวิธี คะแนนอัตโนมัติของตัวเลขและอ้างอิงไม่พิสูจน์ความหมายภาษาไทย ต้องมีผู้ตรวจและรายงานความเห็นที่ไม่ตรงกัน ผล tests และ model smoke test ไม่ใช่คะแนนวิจัย
 
-Query runs retain response, candidate verification problems, model revision and prompt version. Keep rejected candidate text out of public responses. Inspect reviewer disagreement separately; automatic number/citation gates do not prove semantic entailment in Thai. A model connection smoke test is never an answer-quality evaluation. No benchmark score is asserted until the corpus, protocol and human reference answers are approved.
+## เก็บคำตอบสามวิธี
+
+`scripts/compare_proposal_answers.py --cases /path/to/reviewed-cases.json` บันทึก semantic text, hybrid text และวิธีที่เสนอใน JSON สำหรับผู้ตรวจ ทุก case ต้องมี `question`, `reviewed_by`, `expected_status`, `expected_numbers` และ `evidence` แบบ `version_id/page` ที่ยังเผยแพร่อยู่ ต้องมี index BGE-M3 จริงและ digest ตรงกัน มิฉะนั้นจะไม่เริ่มทดลอง
+
+ผล baseline เป็นข้อความสำหรับประเมินเท่านั้น ไม่ผ่าน public answer verifier และไม่ถูกนำไปใช้เป็นความรู้ คะแนนความถูกต้องของคำตอบ/อ้างอิง/การงดตอบเริ่มเป็น `null` ให้ผู้ตรวจเติม ตัวเลขที่ตรงกันเป็นเพียงการตรวจประกอบ ไม่ใช่คะแนนความถูกต้องโดยรวม การรันวิธีที่เสนอบันทึก QueryRun ตามปกติ จึงควรใช้ฐานทดลองที่แยกและข้อมูล snapshot ที่อนุมัติแล้ว

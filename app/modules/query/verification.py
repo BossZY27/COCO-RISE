@@ -1,6 +1,7 @@
 """Fail-closed answer verification, independent of API and query orchestration."""
 
 import re
+import json
 
 from app.modules.knowledge import corpus as store
 from app.modules.knowledge.formatting import baht as _baht, cite as _cite
@@ -25,7 +26,11 @@ def verify(answer: str, citations: list[str], used_facts: list[dict], evidence: 
         blob += f" {fact['fiscal_year']}" if fact["fiscal_year"] else ""
         blob += f" {fact.get('note') or ''}"
     blob += f" {(ruling or {}).get('reason') or ''}"          # a reviewed rule quoted in the answer
+    for rule in evidence.get("rules", []):
+        blob += " " + json.dumps(rule.get("conditions", []), ensure_ascii=False)
     problems = []
+    if any(not store.is_verified(r) for r in evidence.get("rules", [])):
+        problems.append("Rule has not been reviewed")
     if REASONING_PREAMBLE.search(answer):
         problems.append("คำตอบเป็นข้อความคิดของโมเดล ไม่ใช่คำตอบภาษาไทยสำหรับผู้ใช้")
     qualitative_support = " ".join(
@@ -107,6 +112,9 @@ def verify(answer: str, citations: list[str], used_facts: list[dict], evidence: 
     if used_facts:
         # a comparison quotes several funds, and an ambiguous name says which other fund it could mean
         answered_about = {fact.get("fund") for fact in used_facts} | set(slots.get("alternatives") or [])
+        if slots.get("intent") == "catalogue_details":
+            answered_about.update(row["fund"] for row in store.fund_catalogue()
+                                  if _cite(row["source"]) in citations)
         allowed_blockers = set()
         if (ruling and ruling.get("verdict") == "not_eligible" and ruling.get("source")
                 and _cite(ruling["source"]) in citations):

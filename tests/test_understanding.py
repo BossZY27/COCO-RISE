@@ -81,9 +81,11 @@ def test_an_annex_clause_maps_to_the_fund_its_reviewed_row_cites():
     assert store.funds_mentioned_in([annex_chunk(5, "2.1.1")]) == ["ทุนทำวิจัยในต่างประเทศ"]
 
 
-def test_a_clause_no_reviewed_row_covers_suggests_no_fund():
-    # 3.1 is a group 3 fund the system does not hold. Its wording once pointed at two group 1 funds.
-    assert store.funds_mentioned_in([annex_chunk(8, "3.1")]) == []
+def test_innovation_clause_uses_its_reviewed_passage_instead_of_similar_names():
+    assert store.funds_mentioned_in([annex_chunk(8, "3.1")]) == [
+        "ทุนสนับสนุนการได้รับทุนบริการวิชาการจากภายนอก"]
+    assert store.funds_mentioned_in([annex_chunk(8, "3.2")]) == [
+        "ทุนสนับสนุนการได้รับทุนพัฒนานวัตกรรมจากภายนอก"]
 
 
 def test_a_purpose_without_a_fund_name_does_not_trigger_matching():

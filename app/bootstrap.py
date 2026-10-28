@@ -33,7 +33,10 @@ class Services:
             models = "unavailable"
         return {"status": "ok" if database and models == "ready" else "degraded",
                 "database": "ready" if database else "migration_required", "models": models,
-                "fallback": "verified_template+bm25"}
+                "fallback": "verified_template+bm25",
+                "answer_model": self.settings.answer_model, "embed_model": self.settings.embed_model,
+                "answer_enabled": self.settings.answer_enabled, "slot_llm_fallback": self.settings.slot_llm_fallback,
+                "vector_index": "ready" if database and self.vectors.ready(self.repository.corpus_revision()) else "pending"}
 
     def close(self):
         self.ollama.close()
